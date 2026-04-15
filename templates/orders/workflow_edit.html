@@ -1,0 +1,21 @@
+{% extends "orders/base.html" %}
+{% load orders_extras %}
+
+{% block title %}Edit {{ entry.order_detail.sc_number }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Edit Workflow - {{ entry.order_detail.sc_number }}</div>
+    <form method="post">
+        {% csrf_token %}
+        {% for col in columns %}
+            <div class="form-group">
+                <label for="{{ col.key }}">{{ col.label }}</label>
+                <input type="text" id="{{ col.key }}" name="{{ col.key }}" value="{{ entry.data|get_item:col.key|default:'' }}">
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a class="btn btn-secondary" href="{% url 'orders:workflow-list' template.slug %}">Back</a>
+    </form>
+</div>
+{% endblock %}

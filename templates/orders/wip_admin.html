@@ -1,0 +1,94 @@
+{% extends "orders/base.html" %}
+
+{% block title %}Admin – Manage WIP by Team{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Manage WIP for Each Team</div>
+    <p class="muted" style="margin-bottom: 1rem;">
+        Work-in-progress (WIP) is configured per team (department). Each team has <strong>WIP types</strong> by lead time (min–max days).
+        Each WIP type has <strong>checkpoints</strong> with a <strong>critical date</strong> – the date by which the process must be actioned.
+        The daily alert email lists checkpoints reaching the critical date and reminds users to act to avoid missing CRD.
+    </p>
+
+    <div style="margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1rem; color: var(--secondary-color); margin-bottom: 0.5rem;">How to manage WIP</h3>
+        <ul style="margin-left: 1.25rem; color: var(--dark-text);">
+            <li><strong>WIP types</strong> define categories by lead time (min–max days) per team. They must be active to appear on the WIP dashboard.</li>
+            <li><strong>Checkpoints</strong> belong to a WIP type and define stages (e.g. "Sample approval", "PP meeting") with rule type (CRD offset or previous checkpoint offset) and offset days. The computed date is the <strong>critical date</strong> – action by this date to avoid delaying shipment.</li>
+            <li>Each user sees only WIP for orders they created/modified (assigned via SOMain User ID). Supervisors see department-wide WIP.</li>
+            <li>Use the links below to open Django Admin to add or edit WIP types and checkpoints for each team.</li>
+            <li>After changing definitions, run <code>sync_wip_orders</code> to update WIP orders and tasks.</li>
+        </ul>
+    </div>
+
+    {% for item in team_data %}
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <span>Team: {{ item.department.name|default:item.department.code }} ({{ item.department.code }})</span>
+            {% if wip_type_changelist %}
+            <a href="{{ wip_type_changelist }}?department__id__exact={{ item.department.id }}" class="btn btn-primary" target="_blank" rel="noopener">Edit WIP types in Admin</a>
+            {% endif %}
+        </div>
+        <table class="table-compact">
+            <thead>
+                <tr>
+                    <th>WIP type</th>
+                    <th>Lead time (days)</th>
+                    <th>Checkpoints</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for wip in item.wip_types %}
+                <tr>
+                    <td>{{ wip.name }}</td>
+                    <td>{{ wip.lead_time_min }} – {{ wip.lead_time_max }}</td>
+                    <td>
+                        {% for cp in wip.checkpoints.all %}
+                        <span style="display: inline-block; margin-right: 0.5rem; margin-bottom: 0.25rem;">
+                            {{ cp.label }} ({{ cp.get_rule_type_display }}, {{ cp.offset_days }} days)
+                        </span>
+                        {% empty %}
+                        <span class="muted">—</span>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="muted">No active WIP types. Add one in Django Admin.</td>
+                </tr>
+                {% endfor %}
+                {% for wip in item.wip_types_inactive %}
+                <tr style="opacity: 0.7;">
+                    <td>{{ wip.name }} <span class="muted">(inactive)</span></td>
+                    <td>{{ wip.lead_time_min }} – {{ wip.lead_time_max }}</td>
+                    <td>
+                        {% for cp in wip.checkpoints.all %}
+                        <span style="display: inline-block; margin-right: 0.5rem;">{{ cp.label }}</span>
+                        {% empty %}—{% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% empty %}
+    <p class="muted">No departments (teams) found. Create departments in Django Admin first.</p>
+    {% endfor %}
+
+    {% if wip_type_changelist or wip_checkpoint_changelist %}
+    <div class="card" style="margin-top: 1rem;">
+        <div class="card-header">Quick links</div>
+        <p style="margin-bottom: 0.75rem;">Open Django Admin to manage definitions globally:</p>
+        <ul style="list-style: none; padding: 0;">
+            {% if wip_type_changelist %}
+            <li style="margin-bottom: 0.5rem;"><a href="{{ wip_type_changelist }}" class="btn btn-secondary" target="_blank" rel="noopener">All WIP types</a></li>
+            {% endif %}
+            {% if wip_checkpoint_changelist %}
+            <li><a href="{{ wip_checkpoint_changelist }}" class="btn btn-secondary" target="_blank" rel="noopener">All checkpoints</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

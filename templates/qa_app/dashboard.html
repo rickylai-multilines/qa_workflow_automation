@@ -1,0 +1,103 @@
+{% extends "qa_app/base.html" %}
+
+{% block title %}QA Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="margin-bottom: 1.5rem; color: var(--primary-color);">QA Workflow Dashboard</h1>
+
+<div class="stats-grid">
+    <div class="stat-card" style="border-left-color: var(--info-color);">
+        <div class="stat-label">In Progress</div>
+        <div class="stat-value" style="color: var(--info-color);">{{ in_progress_count }}</div>
+    </div>
+    <div class="stat-card" style="border-left-color: var(--warning-color);">
+        <div class="stat-label">On Hold</div>
+        <div class="stat-value" style="color: var(--warning-color);">{{ on_hold_count }}</div>
+    </div>
+    <div class="stat-card" style="border-left-color: var(--success-color);">
+        <div class="stat-label">Completed</div>
+        <div class="stat-value" style="color: var(--success-color);">{{ completed_count }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Stage Pipeline</div>
+    <div class="stats-grid" style="grid-template-columns: repeat(5, 1fr);">
+        {% for code, stats in stage_stats.items %}
+        <div class="stat-card" style="text-align: center;">
+            <div class="stat-label">{{ stats.name }}</div>
+            <div class="stat-value">{{ stats.count }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Recent Products</div>
+    <table>
+        <thead>
+            <tr>
+                <th>BMUK Item No.</th>
+                <th>Description</th>
+                <th>Material</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in my_products %}
+            <tr>
+                <td><strong>{{ product.bmuk_item_no }}</strong></td>
+                <td>{{ product.description|truncatewords:10 }}</td>
+                <td><span class="badge badge-info">{{ product.get_material_type_display }}</span></td>
+                <td>
+                    {% if product.status == 'completed' %}
+                        <span class="badge badge-success">{{ product.get_status_display }}</span>
+                    {% elif product.status == 'on_hold' %}
+                        <span class="badge badge-warning">{{ product.get_status_display }}</span>
+                    {% elif product.status == 'in_progress' %}
+                        <span class="badge badge-info">{{ product.get_status_display }}</span>
+                    {% else %}
+                        <span class="badge badge-secondary">{{ product.get_status_display }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'qa_app:product_detail' product.pk %}" class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;">View</a>
+                    <a href="/admin/qa_app/product/{{ product.pk }}/change/" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--secondary-color);">No products assigned</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if products_with_missing_docs %}
+<div class="card">
+    <div class="card-header">⚠ Products with Missing Compliance Documents</div>
+    <div class="alert alert-warning">
+        <ul style="margin: 0; padding-left: 1.5rem;">
+            {% for item in products_with_missing_docs %}
+            <li style="margin-bottom: 0.5rem;">
+                <a href="{% url 'qa_app:product_detail' item.product.pk %}" style="font-weight: 600;">{{ item.product.bmuk_item_no }}</a>
+                - Missing: 
+                {% for doc in item.missing_docs %}
+                    <span class="badge badge-danger">{{ doc|upper }}</span>
+                {% endfor %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<div style="margin-top: 2rem; text-align: center;">
+    <a href="{% url 'qa_app:product_list' %}" class="btn btn-primary">View All Products</a>
+    <a href="/admin/qa_app/product/add/" class="btn btn-success">Add New Product</a>
+</div>
+{% endblock %}
+

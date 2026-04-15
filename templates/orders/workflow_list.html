@@ -1,0 +1,44 @@
+{% extends "orders/base.html" %}
+{% load orders_extras %}
+
+{% block title %}{{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">{{ template.name }}</div>
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>SC Number</th>
+                    <th>PO Number</th>
+                    <th>Product</th>
+                    <th>Assigned</th>
+                    {% for col in columns %}
+                        <th>{{ col.label }}</th>
+                    {% endfor %}
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td>{{ entry.order_detail.sc_number }}</td>
+                    <td>{{ entry.order_detail.po_number }}</td>
+                    <td>{{ entry.order_detail.product_name }}</td>
+                    <td>{{ entry.assigned_user.username|default:"-" }}</td>
+                    {% for col in columns %}
+                        <td>{{ entry.data|get_item:col.key|default:"" }}</td>
+                    {% endfor %}
+                    <td><a class="btn btn-primary" href="{% url 'orders:workflow-edit' entry.id %}">Edit</a></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ columns|length|add:5 }}">No entries.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

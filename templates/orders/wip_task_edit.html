@@ -1,0 +1,71 @@
+{% extends "orders/base.html" %}
+
+{% block title %}{{ task.wip_order.sodetail.sc_number }} - {{ task.wip_order.sodetail.product_id }} - {{ task.checkpoint.label }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">{{ task.wip_order.sodetail.sc_number }} - {{ task.wip_order.sodetail.product_id }} - {{ task.checkpoint.label }}</div>
+
+    <form method="post" class="wip-task-form">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Handled by:</label>
+            <input type="text" class="field-medium" value="{{ task.wip_order.assigned_user.username|default:'-' }}" readonly>
+        </div>
+        <div class="form-group">
+            <label>Wip order:</label>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="text" class="field-medium" value="{{ task.wip_order.id }}" readonly>
+                <a href="{% url 'orders:wip-edit' task.wip_order.id %}" target="_blank" rel="noopener" title="Open WIP order">&#128269; {{ task.wip_order.sodetail.sc_number }} - {{ task.wip_order.sodetail.product_id }}</a>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Checkpoint:</label>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="text" class="field-medium" value="{{ task.checkpoint.id }}" readonly>
+                <span>&#128269; {{ task.checkpoint.wip_type.name }} - {{ task.checkpoint.label }}</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="planned_date">Planned date:</label>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <input type="date" id="planned_date" name="planned_date" value="{{ task.planned_date|date:'Y-m-d' }}" class="date-input">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="setToday('planned_date')">Today</button>
+            </div>
+            <small class="muted">Note: You are 8 hours ahead of server time.</small>
+        </div>
+        <div class="form-group">
+            <label for="action_date">Action date:</label>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <input type="date" id="action_date" name="action_date" value="{{ task.action_date|date:'Y-m-d' }}" class="date-input">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="setToday('action_date')">Today</button>
+            </div>
+            <small class="muted">Note: You are 8 hours ahead of server time.</small>
+        </div>
+        <div class="form-group">
+            <label>Kpi days:</label>
+            <input type="text" value="{{ task.kpi_days|default:'' }}" readonly class="field-narrow">
+        </div>
+        <div class="form-group">
+            <label for="status">Status:</label>
+            <select id="status" name="status">
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a class="btn btn-secondary" href="{% url 'orders:wip-dashboard' %}">Back to WIP Dashboard</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function setToday(fieldId) {
+    var d = new Date();
+    var s = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    document.getElementById(fieldId).value = s;
+}
+</script>
+{% endblock %}

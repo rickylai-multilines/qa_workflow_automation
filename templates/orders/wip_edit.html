@@ -1,0 +1,115 @@
+{% extends "orders/base.html" %}
+
+{% block title %}WIP Order {{ wip_order.sodetail.sc_number }} - {{ wip_order.sodetail.product_id }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">WIP Order: {{ wip_order.sodetail.sc_number }} - {{ wip_order.sodetail.product_id }}</div>
+    <div style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem 2rem;">
+        <div><strong>Product:</strong> {{ wip_order.sodetail.product_name }}</div>
+        <div><strong>CRD:</strong> {{ wip_order.somain.crd|date:"Y-m-d" }}</div>
+        <div>
+            <strong>Handled by:</strong>
+            {% if is_supervisor %}
+                <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <select name="assigned_user" onchange="this.form.submit()">
+                        <option value="">Unassigned</option>
+                        {% for user in team_users %}
+                            <option value="{{ user.id }}" {% if wip_order.assigned_user_id == user.id %}selected{% endif %}>
+                                {{ user.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <noscript><button type="submit" class="btn btn-secondary btn-sm">Update</button></noscript>
+                </form>
+            {% else %}
+                {{ wip_order.assigned_user.username|default:"-" }}
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="wip-edit-table-wrapper">
+            <table class="table-compact">
+                <thead>
+                    <tr>
+                        <th>Checkpoint</th>
+                        <th>Critical Date</th>
+                        <th>Action / Inspection</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr>
+                        <td>{{ task.checkpoint.label }}</td>
+                        <td>
+                            {% if task.checkpoint.label in inspection_detail_labels or task.checkpoint.label in inspection_simple_labels %}
+                                —
+                            {% else %}
+                                <input type="date" name="planned_{{ task.id }}" value="{{ task.planned_date|date:'Y-m-d' }}" title="Planned date">
+                            {% endif %}
+                        </td>
+                        <td class="wip-edit-cell">
+                            {% if task.checkpoint.label in inspection_detail_labels %}
+                                Inspection date:
+                                <input type="date" name="action_{{ task.id }}" value="{{ task.action_date|date:'Y-m-d' }}" title="Inspection date">
+                                <br>
+                                Inspected by:
+                                <select name="inspection_by_{{ task.id }}">
+                                    <option value="">-</option>
+                                    <option value="MTL" {% if task.inspection_by == 'MTL' %}selected{% endif %}>MTL</option>
+                                    <option value="3RD" {% if task.inspection_by == '3RD' %}selected{% endif %}>3rd</option>
+                                    <option value="SELF" {% if task.inspection_by == 'SELF' %}selected{% endif %}>Self</option>
+                                </select>
+                                <br>
+                                Result:
+                                <select name="inspection_result_{{ task.id }}">
+                                    <option value="">-</option>
+                                    <option value="PASS" {% if task.inspection_result == 'PASS' %}selected{% endif %}>PASS</option>
+                                    <option value="FAIL" {% if task.inspection_result == 'FAIL' %}selected{% endif %}>FAIL</option>
+                                </select>
+                            {% elif task.checkpoint.label in inspection_simple_labels %}
+                                Date:
+                                <input type="date" name="action_{{ task.id }}" value="{{ task.action_date|date:'Y-m-d' }}" title="Date">
+                            {% else %}
+                                Action date:
+                                <input type="date" name="action_{{ task.id }}" value="{{ task.action_date|date:'Y-m-d' }}" title="Date when action was completed">
+                                <br>
+                                Status:
+                                <select name="status_{{ task.id }}">
+                                    {% for value, label in status_choices %}
+                                        <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div style="margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a class="btn btn-secondary" href="{% url 'orders:wip-dashboard' %}">Back to WIP Dashboard</a>
+            <a class="btn btn-secondary" href="{% url 'orders:order-detail' wip_order.sodetail.sc_number %}" target="_blank" rel="noopener">Open Order Detail</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .wip-edit-table-wrapper {
+        overflow-x: auto;
+        margin-bottom: 0.5rem;
+    }
+    .wip-edit-cell {
+        min-width: 280px;
+    }
+    .wip-edit-cell input[type="date"],
+    .wip-edit-cell select {
+        margin-right: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+</style>
+{% endblock %}

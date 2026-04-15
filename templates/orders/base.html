@@ -1,0 +1,495 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Order Workflow{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+    <style>
+        :root {
+            --primary-color: #007cba;
+            --primary-dark: #005a87;
+            --primary-light: #e6f4f8;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --light-bg: #f8f9fa;
+            --dark-text: #212529;
+            --border-color: #dee2e6;
+            --header-bg: #007cba;
+            --header-text: #ffffff;
+            --sidebar-bg: #343a40;
+            --sidebar-text: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-decoration: none;
+            color: var(--header-text);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-menu a {
+            color: var(--header-text);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-menu a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-name {
+            font-weight: 500;
+        }
+
+        .btn-logout {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: var(--header-text);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .btn-logout:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .main-container {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 1rem 0.75rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-light);
+            padding-bottom: 0.5rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .sort-link {
+            color: inherit;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .sort-link:hover {
+            text-decoration: underline;
+        }
+
+        .sort-indicator {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tbody tr:hover {
+            background-color: var(--primary-light);
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        .table-compact th,
+        .table-compact td {
+            padding: 0.5rem 0.75rem;
+            white-space: nowrap;
+            font-size: 0.95rem;
+        }
+
+        .muted {
+            color: #6c757d;
+        }
+
+        .critical-overdue {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        .critical-warning {
+            color: #cc8a00;
+            font-weight: 600;
+        }
+
+        .critical-done {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .status-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-button {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #eef1f4;
+            border: 1px solid #d6dbe0;
+            border-radius: 10px;
+            padding: 1rem;
+            text-decoration: none;
+            color: var(--dark-text);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .status-button:hover,
+        .status-button.active {
+            background: #e3e8ee;
+            border-color: #c4cbd4;
+        }
+
+        .status-button .status-count {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .status-button .status-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #6c757d;
+            margin-top: 0.35rem;
+        }
+
+        .search-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: nowrap;
+            margin-bottom: 1rem;
+        }
+
+        .search-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .search-input {
+            min-width: 200px;
+            flex: 1;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 0.75rem;
+        }
+
+        .search-icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: #ffffff;
+            cursor: pointer;
+        }
+
+        .search-icon-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: #6c757d;
+        }
+
+        .advanced-toggle {
+            background: linear-gradient(#f7f9fb, #dfe4ea);
+            border: 1px solid #c2c8cf;
+            color: #2f3a45;
+            box-shadow: inset 0 1px 0 #ffffff, 0 2px 0 #b9c0c8;
+            border-radius: 6px;
+        }
+
+        .advanced-toggle:hover {
+            background: linear-gradient(#ffffff, #e3e8ee);
+        }
+
+        .advanced-toggle:active {
+            box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.15);
+            transform: translateY(1px);
+        }
+
+        .advanced-panel {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .advanced-panel.active {
+            display: block;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .search-grid .form-group label {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .search-grid .field-wide {
+            grid-column: span 2;
+        }
+
+        .search-grid .field-medium {
+            grid-column: span 1;
+            max-width: 220px;
+        }
+
+        .search-grid .field-date {
+            max-width: 180px;
+        }
+
+        .date-input {
+            padding-right: 2.25rem;
+            background-repeat: no-repeat;
+            background-position: right 0.6rem center;
+            background-size: 16px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.45rem 0.6rem;
+            font-size: 0.9rem;
+            background-color: #ffffff;
+        }
+
+        .date-input::-webkit-calendar-picker-indicator {
+            opacity: 0.85;
+            cursor: pointer;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: #8ab6d6;
+            box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.12);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 124, 186, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="{% url 'orders:dashboard' %}" class="logo">
+                Order Workflow
+            </a>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="{% url 'orders:dashboard' %}">Dashboard</a></li>
+                    <li><a href="{% url 'orders:product-list' %}">Products</a></li>
+                    <li><a href="{% url 'orders:order-list' %}">Sales Confirmation</a></li>
+                    <li><a href="{% url 'orders:sc-product-list' %}">SC Product List</a></li>
+                    <li><a href="{% url 'orders:wip-dashboard' %}">WIP</a></li>
+                    <li><a href="{% url 'orders:preferences' %}">Preferences</a></li>
+                    {% if user.is_staff %}
+                    <li><a href="{% url 'orders:wip-admin' %}">Admin</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            <div class="user-info">
+                <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                <a href="{% url 'orders:logout' %}" class="btn-logout">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

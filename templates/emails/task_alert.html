@@ -1,0 +1,16 @@
+<html>
+<body>
+    <h2>{% if is_overdue %}Overdue Task Alert{% else %}Urgent Task Alert{% endif %}</h2>
+    <p>Order: {{ order.order_number }}</p>
+    <p>Stage: {{ stage.stage_name }}</p>
+    <p>Planned Date: {{ task.planned_date }}</p>
+    <p>Status: {{ task.get_status_display }}</p>
+    <p>
+        {% if is_overdue %}
+            This task is overdue. Please take action immediately.
+        {% else %}
+            This task is due in {{ days_until_due }} day(s).
+        {% endif %}
+    </p>
+</body>
+</html>

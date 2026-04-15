@@ -1,0 +1,244 @@
+{% extends "orders/base.html" %}
+{% load orders_extras %}
+
+{% block title %}WIP Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">WIP Dashboard</div>
+
+    <div class="search-toolbar">
+        <form method="get" class="search-group">
+            <input type="hidden" name="sc_number" value="{{ filters.sc_number }}">
+            <input type="hidden" name="cust_order" value="{{ filters.cust_order }}">
+            <input type="hidden" name="order_date_from" value="{{ filters.order_date_from }}">
+            <input type="hidden" name="order_date_to" value="{{ filters.order_date_to }}">
+            <input type="hidden" name="crd_from" value="{{ filters.crd_from }}">
+            <input type="hidden" name="crd_to" value="{{ filters.crd_to }}">
+            <input type="hidden" name="critical_date_from" value="{{ filters.critical_date_from }}">
+            <input type="hidden" name="critical_date_to" value="{{ filters.critical_date_to }}">
+            <input type="hidden" name="department" value="{{ filters.department }}">
+            <input type="hidden" name="advanced" value="{% if show_advanced %}1{% endif %}">
+            <input class="search-input" type="text" name="q" value="{{ filters.q }}" placeholder="General Search (SC no., customer order, product, etc.)">
+            <button class="search-icon-btn" type="submit" title="Search">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 2a8 8 0 0 1 6.32 12.9l4.4 4.4-1.42 1.4-4.38-4.38A8 8 0 1 1 10 2Zm0 2a6 6 0 1 0 .02 12.02A6 6 0 0 0 10 4Z"></path>
+                </svg>
+            </button>
+        </form>
+        <button class="btn advanced-toggle" type="button" onclick="toggleAdvancedSearch()">Advanced Search</button>
+    </div>
+
+    <form method="get" class="advanced-panel {% if show_advanced %}active{% endif %}" id="advancedPanel">
+        <input type="hidden" name="q" value="{{ filters.q }}">
+        <input type="hidden" name="advanced" value="1">
+        <div class="search-grid">
+            <div class="form-group field-medium">
+                <label for="sc_number">SC No.</label>
+                <input type="text" id="sc_number" name="sc_number" value="{{ filters.sc_number }}" placeholder="SC Number">
+            </div>
+            <div class="form-group field-medium">
+                <label for="cust_order">Customer PO No.</label>
+                <input type="text" id="cust_order" name="cust_order" value="{{ filters.cust_order }}" placeholder="Customer Order No.">
+            </div>
+            <div class="form-group field-wide">
+                <label>SC Date</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <input class="date-input field-date" type="date" name="sc_date_from" value="{{ filters.sc_date_from }}">
+                    <input class="date-input field-date" type="date" name="sc_date_to" value="{{ filters.sc_date_to }}">
+                </div>
+            </div>
+            <div class="form-group field-wide">
+                <label>Order Date</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <input class="date-input field-date" type="date" name="order_date_from" value="{{ filters.order_date_from }}">
+                    <input class="date-input field-date" type="date" name="order_date_to" value="{{ filters.order_date_to }}">
+                </div>
+            </div>
+            <div class="form-group field-wide">
+                <label>CRD Date</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <input class="date-input field-date" type="date" name="crd_from" value="{{ filters.crd_from }}">
+                    <input class="date-input field-date" type="date" name="crd_to" value="{{ filters.crd_to }}">
+                </div>
+            </div>
+            <div class="form-group field-wide">
+                <label>Critical Date</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <input class="date-input field-date" type="date" name="critical_date_from" value="{{ filters.critical_date_from }}">
+                    <input class="date-input field-date" type="date" name="critical_date_to" value="{{ filters.critical_date_to }}">
+                </div>
+                <small class="muted">Filter by checkpoint critical (planned) date</small>
+            </div>
+            <div class="form-group field-medium">
+                <label for="department">Department</label>
+                <select id="department" name="department">
+                    <option value="">All</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.code }}" {% if filters.department == dept.code %}selected{% endif %}>
+                            {{ dept.code }}{% if dept.name %} - {{ dept.name }}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div style="margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary">Search</button>
+            <a class="btn btn-secondary" href="{% url 'orders:wip-dashboard' %}">Reset</a>
+        </div>
+    </form>
+
+    <form method="post">
+        {% csrf_token %}
+        {% if page_obj %}<input type="hidden" name="page" value="{{ page_obj.number }}">{% endif %}
+        <div class="wip-table-scroll-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>SC / WIP Order</th>
+                    <th>CRD</th>
+                    <th>SC Date</th>
+                    <th>Product ID</th>
+                    <th>Product</th>
+                    <th>WIP Type</th>
+                    <th>Handled By</th>
+                    {% for label in checkpoint_labels %}
+                        <th>{{ label }}</th>
+                    {% endfor %}
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>
+                        {{ row.order.sodetail.sc_number }}
+                        <br>
+                        <a href="{% url 'orders:wip-edit' row.order.id %}" target="_blank" rel="noopener" class="wip-order-link" title="Open WIP order">{{ row.order.sodetail.sc_number }} - {{ row.order.sodetail.product_id|default:"" }}</a>
+                    </td>
+                    <td>{{ row.order.somain.crd|date:"Y-m-d" }}</td>
+                    <td>{{ row.order.somain.sc_date|date:"Y-m-d" }}</td>
+                    <td>{{ row.order.sodetail.product_id|default:"-" }}</td>
+                    <td>{{ row.order.sodetail.product_name }}</td>
+                    <td>{{ row.order.wip_type.name|default:"-" }}</td>
+                    <td>
+                        {% if is_supervisor %}
+                            <select name="assigned_{{ row.order.id }}">
+                                <option value="">Unassigned</option>
+                                {% for user in team_users %}
+                                    <option value="{{ user.id }}" {% if row.order.assigned_user_id == user.id %}selected{% endif %}>
+                                        {{ user.username }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            {{ row.order.assigned_user.username|default:"-" }}
+                        {% endif %}
+                    </td>
+                    {% for label in checkpoint_labels %}
+                        {% with task=row.tasks|get_item:label %}
+                        <td class="checkpoint-cell">
+                            {% if task %}
+                                {% if label in inspection_detail_labels %}
+                                    Inspection date:
+                                    <input type="date" name="action_{{ task.id }}" value="{{ task.action_date|date:'Y-m-d' }}" title="Inspection date">
+                                    <br>
+                                    Inspected by:
+                                    <select name="inspection_by_{{ task.id }}">
+                                        <option value="">-</option>
+                                        <option value="MTL" {% if task.inspection_by == 'MTL' %}selected{% endif %}>MTL</option>
+                                        <option value="3RD" {% if task.inspection_by == '3RD' %}selected{% endif %}>3rd</option>
+                                        <option value="SELF" {% if task.inspection_by == 'SELF' %}selected{% endif %}>Self</option>
+                                    </select>
+                                    <br>
+                                    Result:
+                                    <select name="inspection_result_{{ task.id }}">
+                                        <option value="">-</option>
+                                        <option value="PASS" {% if task.inspection_result == 'PASS' %}selected{% endif %}>PASS</option>
+                                        <option value="FAIL" {% if task.inspection_result == 'FAIL' %}selected{% endif %}>FAIL</option>
+                                    </select>
+                                {% elif label in inspection_simple_labels %}
+                                    Date:
+                                    <input type="date" name="action_{{ task.id }}" value="{{ task.action_date|date:'Y-m-d' }}" title="Date">
+                                {% else %}
+                                    Critical:
+                                    <br>
+                                    <a href="{% url 'orders:wip-task-edit' task.id %}" target="_blank" rel="noopener" class="checkpoint-link" title="Open checkpoint in new tab">
+                                        <span class="{{ task.critical_class|default:'' }}">
+                                            {{ task.planned_date|date:"Y-m-d" }}
+                                        </span>
+                                    </a>
+                                    <br>
+                                    Action:
+                                    <input type="date" name="action_{{ task.id }}" value="{{ task.action_date|date:'Y-m-d' }}" title="Date when action was completed">
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        {% endwith %}
+                    {% endfor %}
+                    <td>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ checkpoint_labels|length|add:8 }}">No WIP records.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </form>
+    {% if page_obj %}
+    <div style="margin-top: 1rem; display: flex; gap: 1rem; align-items: center;">
+        {% if page_obj.has_previous %}
+            <a class="btn btn-secondary" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a class="btn btn-secondary" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function toggleAdvancedSearch() {
+        const panel = document.getElementById('advancedPanel');
+        panel.classList.toggle('active');
+    }
+</script>
+<style>
+    .wip-table-scroll-wrapper {
+        max-height: 65vh;
+        overflow: auto;
+        margin-bottom: 0.5rem;
+    }
+    /* Keep header row visible when scrolling vertically */
+    .wip-table-scroll-wrapper thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background-color: #007cba;
+        color: #ffffff;
+    }
+
+    .checkpoint-cell .checkpoint-link {
+        color: var(--primary-color, #007cba);
+        text-decoration: none;
+    }
+    .checkpoint-cell .checkpoint-link:hover {
+        text-decoration: underline;
+    }
+    .wip-order-link {
+        color: var(--primary-color, #007cba);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .wip-order-link:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}

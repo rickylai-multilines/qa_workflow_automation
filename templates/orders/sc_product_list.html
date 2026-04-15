@@ -1,0 +1,242 @@
+{% extends "orders/base.html" %}
+{% load humanize %}
+
+{% block title %}SC Product List{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">SC Product List</div>
+    <div class="search-toolbar">
+        <form method="get" class="search-group">
+            <input type="hidden" name="sc_number" value="{{ filters.sc_number }}">
+            <input type="hidden" name="cust_order" value="{{ filters.cust_order }}">
+            <input type="hidden" name="sc_date_from" value="{{ filters.sc_date_from }}">
+            <input type="hidden" name="sc_date_to" value="{{ filters.sc_date_to }}">
+            <input type="hidden" name="order_date_from" value="{{ filters.order_date_from }}">
+            <input type="hidden" name="order_date_to" value="{{ filters.order_date_to }}">
+            <input type="hidden" name="crd_from" value="{{ filters.crd_from }}">
+            <input type="hidden" name="crd_to" value="{{ filters.crd_to }}">
+            <input type="hidden" name="department" value="{{ filters.department }}">
+            <input type="hidden" name="status" value="{{ filters.status }}">
+            <input type="hidden" name="advanced" value="{% if show_advanced %}1{% endif %}">
+            <input class="search-input" type="text" name="q" value="{{ filters.q }}" placeholder="General Search (SC no., customer order, product, etc.)">
+            <button class="search-icon-btn" type="submit" title="Search">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 2a8 8 0 0 1 6.32 12.9l4.4 4.4-1.42 1.4-4.38-4.38A8 8 0 1 1 10 2Zm0 2a6 6 0 1 0 .02 12.02A6 6 0 0 0 10 4Z"></path>
+                </svg>
+            </button>
+        </form>
+        <button class="btn advanced-toggle" type="button" onclick="toggleAdvancedSearch()">Advanced Search</button>
+    </div>
+
+    <form method="get" class="advanced-panel {% if show_advanced %}active{% endif %}" id="advancedPanel">
+        <input type="hidden" name="q" value="{{ filters.q }}">
+        <input type="hidden" name="advanced" value="1">
+        <div class="advanced-search-grid">
+            <div class="form-group">
+                <label for="sc_number">SC No.</label>
+                <input type="text" id="sc_number" name="sc_number" value="{{ filters.sc_number }}" placeholder="SC Number">
+            </div>
+            <div class="form-group">
+                <label for="cust_order">Customer PO No.</label>
+                <input type="text" id="cust_order" name="cust_order" value="{{ filters.cust_order }}" placeholder="Customer Order No.">
+            </div>
+            <div class="form-group">
+                <label>CRD Date</label>
+                <div class="date-range">
+                    <input class="date-input" type="date" name="crd_from" value="{{ filters.crd_from }}" placeholder="mm/dd/yyyy">
+                    <input class="date-input" type="date" name="crd_to" value="{{ filters.crd_to }}" placeholder="mm/dd/yyyy">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>SC Date</label>
+                <div class="date-range">
+                    <input class="date-input" type="date" name="sc_date_from" value="{{ filters.sc_date_from }}" placeholder="mm/dd/yyyy">
+                    <input class="date-input" type="date" name="sc_date_to" value="{{ filters.sc_date_to }}" placeholder="mm/dd/yyyy">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Order Date</label>
+                <div class="date-range">
+                    <input class="date-input" type="date" name="order_date_from" value="{{ filters.order_date_from }}" placeholder="mm/dd/yyyy">
+                    <input class="date-input" type="date" name="order_date_to" value="{{ filters.order_date_to }}" placeholder="mm/dd/yyyy">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="department">Department</label>
+                <select id="department" name="department">
+                    <option value="">All</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.code }}" {% if filters.department == dept.code %}selected{% endif %}>
+                            {{ dept.code }}{% if dept.name %} - {{ dept.name }}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="advanced-search-actions">
+            <button type="submit" class="btn btn-primary">Search</button>
+            <a class="btn btn-secondary" href="{% url 'orders:sc-product-list' %}">Reset</a>
+        </div>
+    </form>
+
+    {% if detail_rows %}
+        <div class="order-detail-table-wrapper table-scroll">
+            <table class="table-compact order-detail-table">
+                <thead>
+                    <tr>
+                        <th>SC No.</th>
+                        <th>Image</th>
+                        <th>Product ID</th>
+                        <th>Cust Item Code</th>
+                        <th>Sup Item Code</th>
+                        <th>Product Name</th>
+                        <th>Unit Price</th>
+                        <th>Quantity</th>
+                        <th>Unit</th>
+                        <th>Item Net Total</th>
+                        <th>Brand</th>
+                        <th>PO No.</th>
+                        <th>Supplier Code</th>
+                        <th>HS Code</th>
+                        <th>Bar Code</th>
+                        <th>French Item No.</th>
+                        <th>Unit/Carton</th>
+                        <th>No. Of Ctn</th>
+                        <th>Cargo Ready Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in detail_rows %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'orders:order-detail' row.detail.sc_number %}">{{ row.detail.sc_number }}</a>
+                        </td>
+                        <td class="product-image-cell">
+                            {% if row.detail.product_id %}
+                                <a href="{% url 'orders:product-image' row.detail.product_id %}" target="_blank" rel="noopener noreferrer">
+                                    <img src="{% url 'orders:product-image' row.detail.product_id %}" alt="" class="product-thumb" loading="lazy" onerror="this.style.display='none'">
+                                </a>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>{{ row.detail.product_id|default:"-" }}</td>
+                        <td>{{ row.detail.cust_item_code|default:"-" }}</td>
+                        <td>{{ row.detail.supplier_item_code|default:"-" }}</td>
+                        <td>{{ row.detail.product_name|default:"-" }}</td>
+                        <td>
+                            {% if row.detail.unit_price is not None %}
+                                {{ row.detail.unit_price|floatformat:3|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.detail.qty is not None %}
+                                {{ row.detail.qty|floatformat:0|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ row.detail.carton_unit|default:"-" }}</td>
+                        <td>
+                            {% if row.amount is not None %}
+                                {{ row.amount|floatformat:2|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ row.detail.brand|default:"-" }}</td>
+                        <td>{{ row.detail.po_number|default:"-" }}</td>
+                        <td>{{ row.detail.supplier_id|default:"-" }}</td>
+                        <td>{{ row.product.hs_code|default:"-" }}</td>
+                        <td>{{ row.product.barcode|default:"-" }}</td>
+                        <td>{{ row.detail.french_item_code|default:"-" }}</td>
+                        <td>
+                            {% if row.detail.qty_per_carton is not None %}
+                                {{ row.detail.qty_per_carton|floatformat:0|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.detail.no_of_carton is not None %}
+                                {{ row.detail.no_of_carton|floatformat:0|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{% if row.somain %}{{ row.somain.crd|date:"Y-m-d" }}{% else %}-{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if page_obj %}
+        <div style="margin-top: 1rem;">
+            {% if page_obj.has_previous %}
+                <a class="btn btn-secondary" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+            {% endif %}
+            <span class="muted" style="margin: 0 0.5rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a class="btn btn-secondary" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% else %}
+        <p>No products found.</p>
+    {% endif %}
+</div>
+
+<style>
+    .advanced-search-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem 2rem;
+    }
+    .advanced-search-grid .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 0.35rem;
+    }
+    .advanced-search-grid .form-group input,
+    .advanced-search-grid .form-group select {
+        width: 100%;
+        max-width: 220px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 0.45rem 0.6rem;
+        font-size: 0.9rem;
+    }
+    .advanced-search-grid .date-range {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .advanced-search-grid .date-range .date-input {
+        max-width: 140px;
+    }
+    .advanced-search-actions {
+        margin-top: 1rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+    .product-image-cell { width: 60px; text-align: center; }
+    .product-thumb { max-width: 48px; max-height: 48px; object-fit: contain; vertical-align: middle; }
+    .order-detail-table-wrapper { max-height: 65vh; overflow: auto; }
+    .order-detail-table-wrapper .order-detail-table { overflow: visible; }
+    .order-detail-table-wrapper .order-detail-table thead th {
+        position: sticky; top: 0; z-index: 2;
+        background-color: var(--primary-color); color: #fff;
+        box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
+    }
+</style>
+<script>
+    function toggleAdvancedSearch() {
+        document.getElementById('advancedPanel').classList.toggle('active');
+    }
+</script>
+{% endblock %}

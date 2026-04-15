@@ -1,0 +1,125 @@
+import argparse
+import datetime
+import json
+import os
+from decimal import Decimal
+
+import pyodbc
+
+FOXPRO_FIELDS = [
+    ('product_id', 'product_id'),
+    ('bar_code', 'bar_code'),
+    ('lookupid', 'lookupid'),
+    ('class_id', 'class_id'),
+    ('class1', 'class1'),
+    ('packing', 'packing'),
+    ('attribute1', 'attribute1'),
+    ('attribute3', 'attribute3'),
+    ('attribute4', 'attribute4'),
+    ('attribute5', 'attribute5'),
+    ('supplier_id', 'supplier_id'),
+    ('product_name', 'product_name'),
+    ('unit_price', 'unit_price'),
+    ('unit_price2', 'unit_price2'),
+    ('unit_price3', 'unit_price3'),
+    ('unit_cost', 'unit_cost'),
+    ('ctn_qty', 'ctn_qty'),
+    ('ctn_unit', 'ctn_unit'),
+    ('ctn_pack', 'ctn_pack'),
+    ('ctn_packqty', 'ctn_packqty'),
+    ('length', 'length'),
+    ('hight', 'hight'),
+    ('width', 'width'),
+    ('measure_unit', 'measure_unit'),
+    ('cuft', 'cuft'),
+    ('cbm', 'cbm'),
+    ('net_wt', 'net_wt'),
+    ('grs_wt', 'grs_wt'),
+    ('group1', 'group1'),
+    ('group2', 'group2'),
+    ('quota_desc', 'quota_desc'),
+    ('custom_code', 'custom_code'),
+    ('discontinued', 'discontinued'),
+    ('desc', 'desc_'),
+    ('cdate', 'cdate'),
+    ('adate', 'adate'),
+    ('photo', 'photo'),
+    ('price_term', 'price_term'),
+    ('price_term2', 'price_term2'),
+    ('price_term3', 'price_term3'),
+    ('cost_term', 'cost_term'),
+    ('date6', 'date6'),
+    ('creator', 'creator'),
+]
+
+
+def _serialize_value(value):
+    if isinstance(value, (datetime.datetime, datetime.date)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return str(value)
+    return value
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Export PRODUCTS rows to JSON.")
+    parser.add_argument('--dsn', default=os.getenv('FOXPRO_DSN', 'Fox Pro ERP'))
+    parser.add_argument('--limit', type=int, default=1)
+    parser.add_argument('--all', action='store_true', help='Export all rows (ignore --limit)')
+    parser.add_argument('--since-hours', type=int, default=None, help='Filter by adate in last N hours')
+    parser.add_argument('--since-days', type=int, default=None, help='Filter by adate in last N days')
+    parser.add_argument('--order-by', default='product_id')
+    parser.add_argument('--output', default=os.path.join(os.getcwd(), 'foxpro_products_export.json'))
+    args = parser.parse_args()
+
+    select_fields = [f"{field} AS {alias}" for field, alias in FOXPRO_FIELDS]
+    cutoff = None
+    if args.since_hours is not None:
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=args.since_hours)
+    elif args.since_days is not None:
+        cutoff = datetime.datetime.now() - datetime.timedelta(days=args.since_days)
+
+    where_clause = ''
+    if cutoff:
+        cutoff_str = cutoff.strftime('%Y/%m/%d %H:%M')
+        # Some newly created records may not have adate yet.
+        # Include cdate so new items are not missed in incremental sync.
+        where_clause = (
+            " WHERE "
+            f"(LEFT(adate, 16) >= '{cutoff_str}' OR LEFT(cdate, 16) >= '{cutoff_str}')"
+        )
+
+    if args.all:
+        query = (
+            f"SELECT {', '.join(select_fields)} "
+            f"FROM PRODUCTS{where_clause} ORDER BY {args.order_by}"
+        )
+    else:
+        query = (
+            f"SELECT TOP {args.limit} {', '.join(select_fields)} "
+            f"FROM PRODUCTS{where_clause} ORDER BY {args.order_by}"
+        )
+
+    conn = pyodbc.connect(f"DSN={args.dsn};")
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+    finally:
+        conn.close()
+
+    output = []
+    export_keys = [alias for _, alias in FOXPRO_FIELDS]
+    for row in rows:
+        row_dict = dict(zip(export_keys, row))
+        serialized = {key: _serialize_value(value) for key, value in row_dict.items()}
+        output.append(serialized)
+
+    with open(args.output, 'w', encoding='utf-8') as f:
+        json.dump(output, f, ensure_ascii=False, indent=2)
+
+    print(f"Wrote {len(output)} row(s) to {args.output}")
+
+
+if __name__ == '__main__':
+    main()

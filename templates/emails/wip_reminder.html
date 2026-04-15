@@ -1,0 +1,36 @@
+<html>
+<body>
+  <h2>WIP Reminder - {{ date }}</h2>
+  <p>Take action on the checkpoints below before the critical date to avoid missing CRD and delaying shipment.</p>
+
+  {% if due_today %}
+    <h3>Critical date today – action required</h3>
+    <ul>
+      {% for task in due_today %}
+        <li>
+          SC {{ task.wip_order.sodetail.sc_number }} /
+          {{ task.wip_order.sodetail.product_name }} –
+          {{ task.checkpoint.label }} (Critical date: {{ task.planned_date }})
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if overdue %}
+    <h3>Overdue – action required immediately</h3>
+    <ul>
+      {% for task in overdue %}
+        <li>
+          SC {{ task.wip_order.sodetail.sc_number }} /
+          {{ task.wip_order.sodetail.product_name }} –
+          {{ task.checkpoint.label }} (Critical date: {{ task.planned_date }})
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if not due_today and not overdue %}
+    <p>No checkpoints due today.</p>
+  {% endif %}
+</body>
+</html>

@@ -1,0 +1,203 @@
+{% extends "orders/base.html" %}
+{% load humanize %}
+
+{% block title %}Order {{ somain.sc_number }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Sales Confirmation {{ somain.sc_number }}</span>
+        <form method="post" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="export_wip">
+            <button type="submit" class="btn btn-primary btn-3d">Export to WIP</button>
+        </form>
+    </div>
+    <style>
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem 2rem;
+        }
+        .detail-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: baseline;
+        }
+        .detail-label {
+            min-width: 140px;
+            font-weight: 600;
+            color: #495057;
+        }
+        .product-image-cell {
+            width: 60px;
+            text-align: center;
+        }
+        .product-thumb {
+            max-width: 48px;
+            max-height: 48px;
+            object-fit: contain;
+            vertical-align: middle;
+        }
+        .order-detail-table-wrapper {
+            max-height: 65vh;
+            overflow: auto;
+        }
+        /* Override base table overflow: hidden - it breaks position: sticky on thead */
+        .order-detail-table-wrapper .order-detail-table {
+            overflow: visible;
+        }
+        .order-detail-table-wrapper .order-detail-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background-color: var(--primary-color);
+            color: #fff;
+            box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
+        }
+    </style>
+    <div class="detail-grid">
+        <div class="detail-row"><span class="detail-label">Company:</span><span>{{ somain.company|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Origin:</span><span>{{ somain.origin|default:"-" }}</span></div>
+
+        <div class="detail-row"><span class="detail-label">SC No.:</span><span>{{ somain.sc_number|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Port of Loading:</span><span>{{ somain.port_of_load|default:"-" }}</span></div>
+
+        <div class="detail-row"><span class="detail-label">Customer Code:</span><span>{{ somain.cu_code|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Ship To:</span><span>{{ somain.ship_to|default:"-" }}</span></div>
+
+        <div class="detail-row"><span class="detail-label">Customer:</span><span>{{ customer_name|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Port of Disch.:</span><span>{{ somain.port_of_disch|default:"-" }}</span></div>
+
+        <div class="detail-row"><span class="detail-label">SC Date:</span><span>{{ somain.sc_date|date:"Y-m-d"|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Via:</span><span>{{ somain.ship_via|default:"-" }}</span></div>
+
+        <div class="detail-row"><span class="detail-label">Order Date:</span><span>{{ somain.order_date|date:"Y-m-d"|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Container Size:</span><span>{{ somain.container_size|default:"-" }}</span></div>
+
+        <div class="detail-row"><span class="detail-label">Cargo Ready Date:</span><span>{{ somain.crd|date:"Y-m-d"|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Payment Terms:</span><span>{{ payment_term_desc|default:somain.payment_term_code|default:"-" }}</span></div>
+
+        <div class="detail-row"><span class="detail-label">Cust. PO No.:</span><span>{{ somain.cust_order|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Total Quantity:</span><span>{{ somain.total_qty|floatformat:0|intcomma|default:"-" }}</span></div>
+
+        <div class="detail-row"><span class="detail-label">Department:</span><span>{{ department_name|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Total CBM:</span><span>{{ somain.total_cbm|default:"-" }}</span></div>
+
+        <div class="detail-row"><span class="detail-label">Merchandiser:</span><span>{{ somain.user_id|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Gross Total Amt:</span><span>{{ somain.gross_total_amt|floatformat:2|intcomma|default:"-" }}</span></div>
+
+        <div class="detail-row"><span class="detail-label">Status:</span><span>{{ somain.sc_status|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Net Total Amount:</span><span>{{ somain.doc_net_total_amt|floatformat:2|intcomma|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Exported to WIP:</span><span>{% if wip_exported %}YES{% else %}NO{% endif %}</span></div>
+    </div>
+    <style>
+        .btn-3d {
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        .btn-3d:active {
+            box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+            transform: translateY(2px);
+        }
+    </style>
+</div>
+
+<div class="card">
+    <div class="card-header">Order Detail</div>
+    {% if detail_rows %}
+        <div class="order-detail-table-wrapper table-scroll">
+            <table class="table-compact order-detail-table">
+                <thead>
+                    <tr>
+                        <th>Line#</th>
+                        <th>Image</th>
+                        <th>Product ID</th>
+                        <th>Cust Item Code</th>
+                        <th>Sup Item Code</th>
+                        <th>Product Name</th>
+                        <th>Unit Price</th>
+                        <th>Quantity</th>
+                        <th>Unit</th>
+                        <th>Item Net Total</th>
+                        <th>Brand</th>
+                        <th>PO No.</th>
+                        <th>Supplier Code</th>
+                        <th>HS Code</th>
+                        <th>Bar Code</th>
+                        <th>French Item No.</th>
+                        <th>Unit/Carton</th>
+                        <th>No. Of Ctn</th>
+                        <th>Cargo Ready Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in detail_rows %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td class="product-image-cell">
+                            {% if row.detail.product_id %}
+                                <a href="{% url 'orders:product-image' row.detail.product_id %}" target="_blank" rel="noopener noreferrer">
+                                    <img src="{% url 'orders:product-image' row.detail.product_id %}" alt="" class="product-thumb" loading="lazy" onerror="this.style.display='none'">
+                                </a>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>{{ row.detail.product_id|default:"-" }}</td>
+                        <td>{{ row.detail.cust_item_code|default:"-" }}</td>
+                        <td>{{ row.detail.supplier_item_code|default:"-" }}</td>
+                        <td>{{ row.detail.product_name|default:"-" }}</td>
+                        <td>
+                            {% if row.detail.unit_price is not None %}
+                                {{ row.detail.unit_price|floatformat:3|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.detail.qty is not None %}
+                                {{ row.detail.qty|floatformat:0|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ row.detail.carton_unit|default:"-" }}</td>
+                        <td>
+                            {% if row.amount is not None %}
+                                {{ row.amount|floatformat:2|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ row.detail.brand|default:"-" }}</td>
+                        <td>{{ row.detail.po_number|default:"-" }}</td>
+                        <td>{{ row.detail.supplier_id|default:"-" }}</td>
+                        <td>{{ row.product.hs_code|default:"-" }}</td>
+                        <td>{{ row.product.barcode|default:"-" }}</td>
+                        <td>{{ row.detail.french_item_code|default:"-" }}</td>
+                        <td>
+                            {% if row.detail.qty_per_carton is not None %}
+                                {{ row.detail.qty_per_carton|floatformat:0|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.detail.no_of_carton is not None %}
+                                {{ row.detail.no_of_carton|floatformat:0|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ somain.crd|date:"Y-m-d"|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No order detail found.</p>
+    {% endif %}
+</div>
+{% endblock %}

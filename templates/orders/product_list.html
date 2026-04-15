@@ -1,0 +1,94 @@
+{% extends "orders/base.html" %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Products</div>
+
+    <form method="get" class="search-group" style="margin-bottom: 1rem; align-items: flex-start;">
+        <textarea
+            class="search-input"
+            name="q"
+            rows="3"
+            placeholder="General Search (one criteria per line)"
+        >{{ filters.q }}</textarea>
+        <button class="search-icon-btn" type="submit" title="Search">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10 2a8 8 0 0 1 6.32 12.9l4.4 4.4-1.42 1.4-4.38-4.38A8 8 0 1 1 10 2Zm0 2a6 6 0 1 0 .02 12.02A6 6 0 0 0 10 4Z"></path>
+            </svg>
+        </button>
+        <a class="btn btn-secondary" href="{% url 'orders:product-list' %}">Reset</a>
+    </form>
+    <p class="muted" style="margin-bottom: 1rem;">Press Enter for next line to add another criteria.</p>
+
+    {% if product_rows %}
+        <div class="product-list-table-wrapper table-scroll">
+            <table class="table-compact product-list-table">
+                <thead>
+                    <tr>
+                        <th>Product ID</th>
+                        <th>Image</th>
+                        <th>Product Name</th>
+                        <th>BM UK Code</th>
+                        <th>French Code</th>
+                        <th>Supplier ID</th>
+                        <th>Main Cat.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in product_rows %}
+                        <tr>
+                            {% with product=row.product %}
+                            <td>
+                                <a href="{% url 'orders:product-detail' product.product_id %}" target="_blank" rel="noopener noreferrer">{{ product.product_id|default:"-" }}</a>
+                            </td>
+                            <td class="product-image-cell">
+                                {% if row.image_url %}
+                                    <a href="{{ row.image_url }}" target="_blank" rel="noopener noreferrer">
+                                        <img src="{{ row.image_url }}" alt="" class="product-thumb" loading="lazy" onerror="this.style.display='none'">
+                                    </a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ product.product_name|default:"-" }}</td>
+                            <td>{{ product.customer_item_code|default:"-" }}</td>
+                            <td>{{ product.french_item_code|default:"-" }}</td>
+                            <td>{{ product.supplier_id|default:"-" }}</td>
+                            <td>{{ row.main_category_name|default:"-" }}</td>
+                            {% endwith %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj %}
+        <div style="margin-top: 1rem;">
+            {% if page_obj.has_previous %}
+                <a class="btn btn-secondary" href="?{% if filters.q %}q={{ filters.q|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+            {% endif %}
+            <span class="muted" style="margin: 0 0.5rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a class="btn btn-secondary" href="?{% if filters.q %}q={{ filters.q|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% else %}
+        <p>No products found.</p>
+    {% endif %}
+</div>
+
+<style>
+    .product-image-cell { width: 60px; text-align: center; }
+    .product-thumb { max-width: 48px; max-height: 48px; object-fit: contain; vertical-align: middle; }
+    .product-list-table-wrapper { max-height: 65vh; overflow: auto; }
+    .product-list-table-wrapper .product-list-table { overflow: visible; }
+    .product-list-table-wrapper .product-list-table thead th {
+        position: sticky; top: 0; z-index: 2;
+        background-color: var(--primary-color); color: #fff;
+        box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}

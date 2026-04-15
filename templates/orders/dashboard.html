@@ -1,0 +1,79 @@
+{% extends "orders/base.html" %}
+
+{% block title %}Order Workflow Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Order Workflow Dashboard</div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Critical Tasks</div>
+            <div class="stat-value">{{ stats.critical_count }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Warning Tasks</div>
+            <div class="stat-value">{{ stats.warning_count }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Normal Tasks</div>
+            <div class="stat-value">{{ stats.normal_count }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Active Orders</div>
+            <div class="stat-value">{{ stats.orders_count }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Critical Tasks</div>
+    {% if critical_tasks %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Stage</th>
+                    <th>Planned Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in critical_tasks %}
+                <tr>
+                    <td><a href="{% url 'orders:order-detail' task.order.id %}">{{ task.order.order_number }}</a></td>
+                    <td>{{ task.stage.stage_name|default:"Unassigned Stage" }}</td>
+                    <td>{{ task.planned_date }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No critical tasks.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">Warning Tasks</div>
+    {% if warning_tasks %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Stage</th>
+                    <th>Planned Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in warning_tasks %}
+                <tr>
+                    <td><a href="{% url 'orders:order-detail' task.order.id %}">{{ task.order.order_number }}</a></td>
+                    <td>{{ task.stage.stage_name|default:"Unassigned Stage" }}</td>
+                    <td>{{ task.planned_date }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No warning tasks.</p>
+    {% endif %}
+</div>
+{% endblock %}

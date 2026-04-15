@@ -1,0 +1,221 @@
+{% extends "orders/base.html" %}
+
+{% block title %}Product {{ product.product_id }}{% endblock %}
+
+{% block content %}
+<div class="card product-detail-card">
+    <h1 class="product-detail-title">
+        Product Name : {{ product.product_name|default:"" }} [{{ product.product_id }}]
+    </h1>
+
+    <div class="product-detail-grid">
+        <div class="product-detail-col product-detail-col-left">
+            <div class="product-detail-field">
+                <label>Product ID</label>
+                <input type="text" readonly value="{{ product.product_id|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Product Name</label>
+                <input type="text" readonly value="{{ product.product_name|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Main Cat.</label>
+                <input type="text" readonly value="{{ main_category_name|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Sub_Cat.</label>
+                <input type="text" readonly value="{{ sub_category_name|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>BM UK Code</label>
+                <input type="text" readonly value="{{ product.customer_item_code|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>French Item Code</label>
+                <input type="text" readonly value="{{ product.french_item_code|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>German Item Code</label>
+                <input type="text" readonly value="{{ product.german_item_code|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Supplier ID</label>
+                <input type="text" readonly value="{{ supplier_display|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Supplier Item Code</label>
+                <input type="text" readonly value="{{ product.supplier_item_code|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Brand</label>
+                <input type="text" readonly value="{{ product.brand|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Season</label>
+                <input type="text" readonly value="">
+            </div>
+            <div class="product-detail-field">
+                <label>Material</label>
+                <input type="text" readonly value="{{ product.material|default:'' }}">
+            </div>
+        </div>
+
+        <div class="product-detail-col product-detail-col-center">
+            <div class="product-detail-image-wrap">
+                {% if image_url %}
+                    <img src="{{ image_url }}" alt="" class="product-detail-image" onerror="this.style.display='none'">
+                {% else %}
+                    <div class="product-detail-image-placeholder muted">No image</div>
+                {% endif %}
+            </div>
+            <div class="product-detail-field product-detail-field-stack">
+                <label>Description:</label>
+                <textarea readonly rows="12">{{ product.description|default:'' }}</textarea>
+            </div>
+        </div>
+
+        <div class="product-detail-col product-detail-col-right">
+            <div class="product-detail-field">
+                <label>Barcode</label>
+                <input type="text" readonly value="{{ product.barcode|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>HTS</label>
+                <input type="text" readonly value="{{ product.hs_code|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Dupl. From Product ID</label>
+                <input type="text" readonly value="{{ product.copy_from_product_id|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Measure Unit</label>
+                <input type="text" readonly value="{{ product.measure_unit|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Length</label>
+                <input type="text" readonly value="{% if product.length is not None %}{{ product.length|floatformat:4 }}{% endif %}">
+            </div>
+            <div class="product-detail-field">
+                <label>Width</label>
+                <input type="text" readonly value="{% if product.width is not None %}{{ product.width|floatformat:4 }}{% endif %}">
+            </div>
+            <div class="product-detail-field">
+                <label>Height</label>
+                <input type="text" readonly value="{% if product.hight is not None %}{{ product.hight|floatformat:4 }}{% endif %}">
+            </div>
+            <div class="product-detail-field">
+                <label>CUFT</label>
+                <input type="text" readonly value="{% if product.cuft is not None %}{{ product.cuft|floatformat:6 }}{% endif %}">
+            </div>
+            <div class="product-detail-field">
+                <label>CBM</label>
+                <input type="text" readonly value="{% if product.cbm is not None %}{{ product.cbm|floatformat:6 }}{% endif %}">
+            </div>
+            <div class="product-detail-field">
+                <label>Qty per Carton</label>
+                <input type="text" readonly value="{% if product.qty_per_carton is not None %}{{ product.qty_per_carton }}{% endif %}">
+            </div>
+            <div class="product-detail-field">
+                <label>Packaging</label>
+                <input type="text" readonly value="{{ product.packing|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Last Modified by</label>
+                <input type="text" readonly value="{{ product.mod_by|default:'' }}">
+            </div>
+        </div>
+    </div>
+
+    <p style="margin-top: 1.25rem;">
+        <a class="btn btn-secondary" href="{% url 'orders:product-list' %}">Back to Products</a>
+    </p>
+</div>
+
+<style>
+    .product-detail-card {
+        border: 1px solid var(--border-color);
+    }
+    .product-detail-title {
+        color: var(--primary-color);
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin: 0 0 1.25rem 0;
+        line-height: 1.4;
+    }
+    .product-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1.5rem 2rem;
+        align-items: start;
+    }
+    @media (max-width: 1100px) {
+        .product-detail-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .product-detail-field {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        align-items: center;
+        gap: 0.5rem 0.75rem;
+        margin-bottom: 0.65rem;
+    }
+    .product-detail-field label {
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--dark-text);
+    }
+    .product-detail-field input[type="text"] {
+        width: 100%;
+        max-width: none;
+        padding: 0.4rem 0.55rem;
+        font-size: 0.9rem;
+        background: #fff;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+    .product-detail-field-stack {
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+    .product-detail-field-stack label {
+        margin-bottom: 0.35rem;
+    }
+    .product-detail-field-stack textarea {
+        width: 100%;
+        min-height: 200px;
+        padding: 0.5rem 0.65rem;
+        font-size: 0.9rem;
+        font-family: inherit;
+        resize: vertical;
+        background: #fff;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+    .product-detail-image-wrap {
+        margin-bottom: 1rem;
+        min-height: 280px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+    }
+    .product-detail-image {
+        max-width: 100%;
+        width: auto;
+        height: auto;
+        max-height: 420px;
+        object-fit: contain;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: #fafafa;
+    }
+    .product-detail-image-placeholder {
+        padding: 2rem;
+        border: 1px dashed var(--border-color);
+        border-radius: 4px;
+        width: 100%;
+        text-align: center;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "qa_app/base.html" %}
+
+{% block title %}Product List{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="margin-bottom: 1.5rem; color: var(--primary-color);">Product List</h1>
+
+<div class="card">
+    <form method="get">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div class="form-group">
+                <label>Search:</label>
+                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search products...">
+            </div>
+            <div class="form-group">
+                <label>Status:</label>
+                <select name="status">
+                    <option value="">All Status</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Material:</label>
+                <select name="material">
+                    <option value="">All Materials</option>
+                    {% for value, label in material_choices %}
+                    <option value="{{ value }}" {% if request.GET.material == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end; gap: 0.5rem;">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="{% url 'qa_app:product_list' %}" class="btn btn-secondary">Clear</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>BMUK Item No.</th>
+                <th>MTL Ref NO.</th>
+                <th>Description</th>
+                <th>Material</th>
+                <th>Status</th>
+                <th>QA In-charge</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td><strong>{{ product.bmuk_item_no }}</strong></td>
+                <td>{{ product.mtl_ref_no }}</td>
+                <td>{{ product.description|truncatewords:10 }}</td>
+                <td><span class="badge badge-info">{{ product.get_material_type_display }}</span></td>
+                <td>
+                    {% if product.status == 'completed' %}
+                        <span class="badge badge-success">{{ product.get_status_display }}</span>
+                    {% elif product.status == 'on_hold' %}
+                        <span class="badge badge-warning">{{ product.get_status_display }}</span>
+                    {% elif product.status == 'in_progress' %}
+                        <span class="badge badge-info">{{ product.get_status_display }}</span>
+                    {% else %}
+                        <span class="badge badge-secondary">{{ product.get_status_display }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ product.assigned_user|default:"-" }}</td>
+                <td>
+                    <a href="{% url 'qa_app:product_detail' product.pk %}" class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;">View</a>
+                    <a href="/admin/qa_app/product/{{ product.pk }}/change/" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 2rem; color: var(--secondary-color);">No products found</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 2rem; text-align: center;">
+    <a href="{% url 'qa_app:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    <a href="/admin/qa_app/product/add/" class="btn btn-success">Add New Product</a>
+</div>
+{% endblock %}
+

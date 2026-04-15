@@ -1,0 +1,241 @@
+{% extends "orders/base.html" %}
+{% load humanize %}
+{% load orders_extras %}
+
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Sales Confirmation</div>
+    <div class="search-toolbar">
+        <form method="get" class="search-group">
+            <input type="hidden" name="sc_number" value="{{ filters.sc_number }}">
+            <input type="hidden" name="cust_order" value="{{ filters.cust_order }}">
+            <input type="hidden" name="order_date_from" value="{{ filters.order_date_from }}">
+            <input type="hidden" name="order_date_to" value="{{ filters.order_date_to }}">
+            <input type="hidden" name="crd_from" value="{{ filters.crd_from }}">
+            <input type="hidden" name="crd_to" value="{{ filters.crd_to }}">
+            <input type="hidden" name="department" value="{{ filters.department }}">
+            <input type="hidden" name="status" value="{{ filters.status }}">
+            <input type="hidden" name="advanced" value="{% if show_advanced %}1{% endif %}">
+            <input class="search-input" type="text" name="q" value="{{ filters.q }}" placeholder="General Search">
+            <button class="search-icon-btn" type="submit" title="Search">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 2a8 8 0 0 1 6.32 12.9l4.4 4.4-1.42 1.4-4.38-4.38A8 8 0 1 1 10 2Zm0 2a6 6 0 1 0 .02 12.02A6 6 0 0 0 10 4Z"></path>
+                </svg>
+            </button>
+        </form>
+        <button class="btn advanced-toggle" type="button" onclick="toggleAdvancedSearch()">Advanced Search</button>
+    </div>
+
+    <form method="get" class="advanced-panel {% if show_advanced %}active{% endif %}" id="advancedPanel">
+        <input type="hidden" name="q" value="{{ filters.q }}">
+        <input type="hidden" name="status" value="{{ filters.status }}">
+        <input type="hidden" name="advanced" value="1">
+        <div class="search-grid">
+            <div class="form-group field-medium">
+                <label for="sc_number">SC No.</label>
+                <input type="text" id="sc_number" name="sc_number" value="{{ filters.sc_number }}" placeholder="SC Number">
+            </div>
+            <div class="form-group field-medium">
+                <label for="cust_order">Customer PO No.</label>
+                <input type="text" id="cust_order" name="cust_order" value="{{ filters.cust_order }}" placeholder="Customer Order No.">
+            </div>
+            <div class="form-group field-wide">
+                <label>SC Date</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <input class="date-input field-date" type="date" name="sc_date_from" value="{{ filters.sc_date_from }}">
+                    <input class="date-input field-date" type="date" name="sc_date_to" value="{{ filters.sc_date_to }}">
+                </div>
+            </div>
+            <div class="form-group field-wide">
+                <label>Order Date</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <input class="date-input field-date" type="date" name="order_date_from" value="{{ filters.order_date_from }}">
+                    <input class="date-input field-date" type="date" name="order_date_to" value="{{ filters.order_date_to }}">
+                </div>
+            </div>
+            <div class="form-group field-wide">
+                <label>CRD Date</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <input class="date-input field-date" type="date" name="crd_from" value="{{ filters.crd_from }}">
+                    <input class="date-input field-date" type="date" name="crd_to" value="{{ filters.crd_to }}">
+                </div>
+            </div>
+            <div class="form-group field-medium">
+                <label for="department">Department</label>
+                <select id="department" name="department">
+                    <option value="">All</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.code }}" {% if filters.department == dept.code %}selected{% endif %}>
+                            {{ dept.code }}{% if dept.name %} - {{ dept.name }}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div style="margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary">Search</button>
+            <a class="btn btn-secondary" href="{% url 'orders:order-list' %}">Reset</a>
+        </div>
+    </form>
+
+    {% if orders %}
+        <div class="table-scroll">
+            <table class="table-compact">
+                <thead>
+                    <tr>
+                        <th>
+                            <a class="sort-link" href="?sort=company&dir={% if sort == 'company' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                Company
+                                {% if sort == 'company' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a class="sort-link" href="?sort=sc_number&dir={% if sort == 'sc_number' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                SC No.
+                                {% if sort == 'sc_number' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a class="sort-link" href="?sort=sc_status&dir={% if sort == 'sc_status' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                Status
+                                {% if sort == 'sc_status' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a class="sort-link" href="?sort=cu_code&dir={% if sort == 'cu_code' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                Customer ID
+                                {% if sort == 'cu_code' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>Customer Name</th>
+                        <th>
+                            <a class="sort-link" href="?sort=cust_order&dir={% if sort == 'cust_order' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                Customer Order
+                                {% if sort == 'cust_order' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a class="sort-link" href="?sort=sc_date&dir={% if sort == 'sc_date' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                SC Date
+                                {% if sort == 'sc_date' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a class="sort-link" href="?sort=crd&dir={% if sort == 'crd' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                CRD
+                                {% if sort == 'crd' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a class="sort-link" href="?sort=department_no&dir={% if sort == 'department_no' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                Department
+                                {% if sort == 'department_no' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a class="sort-link" href="?sort=user_id&dir={% if sort == 'user_id' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                Merchandiser
+                                {% if sort == 'user_id' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a class="sort-link" href="?sort=port_of_load&dir={% if sort == 'port_of_load' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                Ship From
+                                {% if sort == 'port_of_load' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a class="sort-link" href="?sort=port_of_disch&dir={% if sort == 'port_of_disch' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                Port of Disch.
+                                {% if sort == 'port_of_disch' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a class="sort-link" href="?sort=doc_net_total_amt&dir={% if sort == 'doc_net_total_amt' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&sc_date_from={{ filters.sc_date_from }}&sc_date_to={{ filters.sc_date_to }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">
+                                Total Amount (USD)
+                                {% if sort == 'doc_net_total_amt' %}
+                                    <span class="sort-indicator">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>WIP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                        <tr>
+                            <td>{{ order.company|default:"-" }}</td>
+                            <td>
+                                <a href="{% url 'orders:order-detail' order.sc_number %}">
+                                    {{ order.sc_number }}
+                                </a>
+                            </td>
+                            <td>{{ order.sc_status|default:"-" }}</td>
+                            <td>{{ order.cu_code|default:"-" }}</td>
+                            <td>{{ customer_map|get_item:order.cu_code|default:"-" }}</td>
+                            <td>{{ order.cust_order|default:"-" }}</td>
+                            <td>{{ order.sc_date|date:"Y-m-d"|default:"-" }}</td>
+                            <td>{{ order.crd|date:"Y-m-d"|default:"-" }}</td>
+                            <td>{{ department_map|get_item:order.department_no|default:"-" }}</td>
+                            <td>{{ merchandiser_map|get_item:order.user_id|default:"-" }}</td>
+                            <td>{{ order.port_of_load|default:"-" }}</td>
+                            <td>{{ order.port_of_disch|default:"-" }}</td>
+                            <td>
+                                {% if order.doc_net_total_amt is not None %}
+                                    {{ order.doc_net_total_amt|floatformat:2|intcomma }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{% if order.sc_number in wip_sc_numbers %}✔{% else %}—{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 1rem;">
+            {% if page_obj.has_previous %}
+                <a class="btn btn-secondary" href="?page={{ page_obj.previous_page_number }}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">Previous</a>
+            {% endif %}
+            <span class="muted" style="margin: 0 0.5rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a class="btn btn-secondary" href="?page={{ page_obj.next_page_number }}&q={{ filters.q }}&status={{ filters.status }}&sc_number={{ filters.sc_number }}&cust_order={{ filters.cust_order }}&order_date_from={{ filters.order_date_from }}&order_date_to={{ filters.order_date_to }}&crd_from={{ filters.crd_from }}&crd_to={{ filters.crd_to }}&department={{ filters.department }}&advanced={% if show_advanced %}1{% endif %}">Next</a>
+            {% endif %}
+        </div>
+    {% else %}
+        <p>No orders found.</p>
+    {% endif %}
+</div>
+
+<script>
+    function toggleAdvancedSearch() {
+        const panel = document.getElementById('advancedPanel');
+        panel.classList.toggle('active');
+    }
+</script>
+{% endblock %}

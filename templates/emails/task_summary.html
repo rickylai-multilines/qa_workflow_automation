@@ -1,0 +1,36 @@
+<html>
+<body>
+    <h2>Outstanding Tasks Summary</h2>
+    <p>Hello {{ user.get_full_name|default:user.username }},</p>
+    <p>Here is your task summary as of {{ generated_at }}.</p>
+
+    {% if critical_tasks %}
+        <h3>Critical Tasks</h3>
+        <ul>
+            {% for task in critical_tasks %}
+                <li>{{ task.order.order_number }} - {{ task.stage.stage_name }} (Due {{ task.planned_date }})</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if warning_tasks %}
+        <h3>Warning Tasks</h3>
+        <ul>
+            {% for task in warning_tasks %}
+                <li>{{ task.order.order_number }} - {{ task.stage.stage_name }} (Due {{ task.planned_date }})</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if normal_tasks %}
+        <h3>Normal Tasks</h3>
+        <ul>
+            {% for task in normal_tasks %}
+                <li>{{ task.order.order_number }} - {{ task.stage.stage_name }} (Due {{ task.planned_date }})</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <p>Thank you.</p>
+</body>
+</html>
