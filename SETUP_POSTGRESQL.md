@@ -28,7 +28,7 @@ Before running migrations, you need to create the database in PostgreSQL.
    ```bash
    psql -U postgres -h localhost -p 5541
    ```
-3. Enter your password when prompted: `multiL@%%$1786`
+3. Enter your PostgreSQL password when prompted.
 4. Create the database:
    ```sql
    CREATE DATABASE qa_workflow_db;

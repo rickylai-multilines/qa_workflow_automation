@@ -35,7 +35,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'qa_workflow_db',
         'USER': 'postgres',
-        'PASSWORD': 'multiL@%%$1786',
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
         'HOST': 'localhost',
         'PORT': '5541',
     }
