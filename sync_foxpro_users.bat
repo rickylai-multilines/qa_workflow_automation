@@ -7,11 +7,15 @@ set PY32=C:\Users\erpadmin\AppData\Local\Programs\Python\Python311-32\python.exe
 set VENV_ACTIVATE=%PROJECT_DIR%\venv\Scripts\activate.bat
 set DSN=Fox Pro ERP
 set HOURS=48
+set JSON_DIR=%PROJECT_DIR%\json
+set LOG_DIR=%PROJECT_DIR%\logs
 
-set USERS_JSON=%PROJECT_DIR%\foxpro_users_export.json
-set LOG_FILE=%PROJECT_DIR%\sync_foxpro_users.log
+set USERS_JSON=%JSON_DIR%\foxpro_users_export.json
+set LOG_FILE=%LOG_DIR%\sync_foxpro_users.log
 
 cd /d "%PROJECT_DIR%"
+if not exist "%JSON_DIR%" mkdir "%JSON_DIR%"
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
 
 echo === Users sync start %DATE% %TIME% === >> "%LOG_FILE%"
 

@@ -1,4 +1,17 @@
 @echo off
+setlocal
+set PROJECT_DIR=%~dp0
+if "%PROJECT_DIR:~-1%"=="\" set PROJECT_DIR=%PROJECT_DIR:~0,-1%
+set JSON_DIR=%PROJECT_DIR%\json
+set LOG_DIR=%PROJECT_DIR%\logs
+set EXPORT_JSON=%JSON_DIR%\data_export.json
+set LOG_FILE=%LOG_DIR%\migrate_data.log
+
+if not exist "%JSON_DIR%" mkdir "%JSON_DIR%"
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
+
+cd /d "%PROJECT_DIR%"
+
 echo ========================================
 echo SQLite to PostgreSQL Migration
 echo ========================================
@@ -15,7 +28,7 @@ REM Create SQLite settings temporarily
 python -c "import os; content = open('qa_workflow/settings.py', 'r', encoding='utf-8').read(); content = content.replace('django.db.backends.postgresql', 'django.db.backends.sqlite3'); content = content.replace(\"NAME': 'qa_workflow_db',\", \"NAME': BASE_DIR / 'db.sqlite3',\"); open('qa_workflow/settings.py', 'w', encoding='utf-8').write(content)"
 
 echo Exporting data...
-python manage.py dumpdata --natural-foreign --natural-primary > data_export.json
+python manage.py dumpdata --natural-foreign --natural-primary > "%EXPORT_JSON%" 2>> "%LOG_FILE%"
 
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Failed to export data
@@ -41,7 +54,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo Step 4: Loading data into PostgreSQL...
-python manage.py loaddata data_export.json
+python manage.py loaddata "%EXPORT_JSON%" >> "%LOG_FILE%" 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Failed to load data
@@ -59,5 +72,4 @@ echo 1. Test: python manage.py runserver
 echo 2. Check admin: http://127.0.0.1:8000/admin/
 echo.
 pause
-
-
+endlocal

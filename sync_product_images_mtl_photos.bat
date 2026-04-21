@@ -14,13 +14,15 @@ REM   RECENT_DAYS=0  -> no age filter (recommended for "missing + newer" sync)
 
 set SOURCE=\\192.168.1.108\iTrader\mtl\PHOTOS
 set DEST=C:\apps\qa_workflow_automation\Product_images
-set LOG_FILE=C:\apps\qa_workflow_automation\sync_product_images_mtl_photos.log
+set LOG_DIR=C:\apps\qa_workflow_automation\logs
+set LOG_FILE=%LOG_DIR%\sync_product_images_mtl_photos.log
 set RECENT_DAYS=0
 
 REM Common image extensions only (add more if needed)
 set FILESPEC=*.jpg *.jpeg *.png *.gif *.webp *.bmp *.tif *.tiff
 
 if not exist "%DEST%" mkdir "%DEST%"
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
 
 echo === Sync start %DATE% %TIME% === >> "%LOG_FILE%"
 echo SOURCE=%SOURCE% DEST=%DEST% RECENT_DAYS=%RECENT_DAYS% >> "%LOG_FILE%"
