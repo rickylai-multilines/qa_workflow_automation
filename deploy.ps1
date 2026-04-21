@@ -3,6 +3,7 @@ param(
     [string]$Branch = "main",
     [string]$VenvPath = ".\venv",
     [string]$ServiceName = "",
+    [switch]$SkipMigrationCheck,
     [switch]$SkipPip,
     [switch]$SkipMigrate,
     [switch]$SkipCollectstatic,
@@ -61,6 +62,11 @@ if (-not $SkipPip) {
     Write-Step "Installing/updating Python dependencies"
     Invoke-Checked "python -m pip install --upgrade pip"
     Invoke-Checked "pip install -r requirements.txt"
+}
+
+if (-not $SkipMigrationCheck) {
+    Write-Step "Checking for missing migration files"
+    Invoke-Checked "python manage.py makemigrations --check --dry-run"
 }
 
 if (-not $SkipMigrate) {
