@@ -137,9 +137,9 @@ class FoxUserAdmin(admin.ModelAdmin):
 
 @admin.register(Supplier)
 class SupplierAdmin(admin.ModelAdmin):
-    list_display = ('supplier_code', 'supplier_name', 'contact_person', 'tel', 'country')
-    search_fields = ('supplier_code', 'supplier_name', 'contact_person', 'email')
-    list_filter = ('country',)
+    list_display = ('supplier_code', 'supplier_name', 'status', 'contact_person', 'tel', 'country')
+    search_fields = ('supplier_code', 'supplier_name', 'status', 'contact_person', 'email')
+    list_filter = ('status', 'country')
 
 
 @admin.register(Department)

@@ -29,6 +29,7 @@ FOXPRO_FIELDS = [
     ('contact2', 'contact2'),
     ('contact3', 'contact3'),
     ('supp_pay', 'supp_pay'),
+    ('status', 'status'),
     ('ship_from', 'ship_from'),
     ('remarks', 'remarks'),
     ('cdate', 'cdate'),

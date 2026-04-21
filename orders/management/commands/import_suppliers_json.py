@@ -29,6 +29,7 @@ FIELD_MAP = {
     'contact2': 'contact2',
     'contact3': 'contact3',
     'supp_pay': 'payment_term',
+    'status': 'status',
     'ship_from': 'ship_from',
     'remarks': 'remark',
     'cdate': 'created_time',

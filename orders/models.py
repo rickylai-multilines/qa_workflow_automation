@@ -574,6 +574,7 @@ class Supplier(models.Model):
     contact2 = models.CharField(max_length=50, null=True, blank=True, db_column='Contact2')
     contact3 = models.CharField(max_length=50, null=True, blank=True, db_column='Contact3')
     payment_term = models.CharField(max_length=10, null=True, blank=True, db_column='PaymentTerm')
+    status = models.CharField(max_length=10, null=True, blank=True, db_column='Status')
     ship_from = models.CharField(max_length=10, null=True, blank=True, db_column='ShipFrom')
     remark = models.TextField(null=True, blank=True, db_column='Remark')
     created_time = models.DateTimeField(null=True, blank=True, db_column='CreatedTime')
