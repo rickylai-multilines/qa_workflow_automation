@@ -12,7 +12,7 @@ REM Optional: set RECENT_DAYS to a positive number to only consider source files
 REM whose last-write time is within the last N days (reduces network scan).
 REM   RECENT_DAYS=0  -> no age filter (recommended for "missing + newer" sync)
 
-set SOURCE=\\mtlerp01\iTrader\mtl\PHOTOS
+set SOURCE=\\192.168.1.108\iTrader\mtl\PHOTOS
 set DEST=C:\apps\qa_workflow_automation\Product_images
 set LOG_FILE=C:\apps\qa_workflow_automation\sync_product_images_mtl_photos.log
 set RECENT_DAYS=0

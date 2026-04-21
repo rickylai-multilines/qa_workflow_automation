@@ -4,8 +4,8 @@ setlocal
 REM === Sync product images from network drive to local Product_images ===
 REM Use UNC path (\\server\share\path) instead of Y: - mapped drives are per-session
 REM and may not exist when run from Task Scheduler or other contexts.
-REM If your path differs, update SOURCE below. Y: maps to \\mtlerp01\iTrader
-set SOURCE=\\mtlerp01\iTrader\mtl\PHOTOS
+REM If your path differs, update SOURCE below. Y: maps to \\192.168.1.108\iTrader
+set SOURCE=\\192.168.1.108\iTrader\mtl\PHOTOS
 set DEST=C:\apps\qa_workflow_automation\Product_images
 set LOG_FILE=C:\apps\qa_workflow_automation\sync_product_images.log
 
