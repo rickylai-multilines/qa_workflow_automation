@@ -2,8 +2,8 @@
 setlocal
 
 REM === Configuration ===
-set PROJECT_DIR=C:\dev\qa_workflow_automation
-set PY32=C:\Users\ricky_lai\AppData\Local\Programs\Python\Python311-32\python.exe
+set PROJECT_DIR=C:\apps\qa_workflow_automation
+set PY32=C:\Users\erpadmin\AppData\Local\Programs\Python\Python311-32\python.exe
 set VENV_ACTIVATE=%PROJECT_DIR%\venv\Scripts\activate.bat
 set DSN=Fox Pro ERP
 set HOURS=48

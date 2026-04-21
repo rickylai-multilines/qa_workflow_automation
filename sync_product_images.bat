@@ -6,8 +6,8 @@ REM Use UNC path (\\server\share\path) instead of Y: - mapped drives are per-ses
 REM and may not exist when run from Task Scheduler or other contexts.
 REM If your path differs, update SOURCE below. Y: maps to \\mtlerp01\iTrader
 set SOURCE=\\mtlerp01\iTrader\mtl\PHOTOS
-set DEST=C:\dev\qa_workflow_automation\Product_images
-set LOG_FILE=C:\dev\qa_workflow_automation\sync_product_images.log
+set DEST=C:\apps\qa_workflow_automation\Product_images
+set LOG_FILE=C:\apps\qa_workflow_automation\sync_product_images.log
 
 REM Create destination if it doesn't exist
 if not exist "%DEST%" mkdir "%DEST%"

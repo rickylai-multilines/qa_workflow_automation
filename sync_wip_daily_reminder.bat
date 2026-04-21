@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-set PROJECT_DIR=C:\dev\qa_workflow_automation
+set PROJECT_DIR=C:\apps\qa_workflow_automation
 set VENV_ACTIVATE=%PROJECT_DIR%\venv\Scripts\activate.bat
 set LOG_FILE=%PROJECT_DIR%\sync_wip_daily_reminder.log
 

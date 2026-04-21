@@ -13,8 +13,8 @@ REM whose last-write time is within the last N days (reduces network scan).
 REM   RECENT_DAYS=0  -> no age filter (recommended for "missing + newer" sync)
 
 set SOURCE=\\mtlerp01\iTrader\mtl\PHOTOS
-set DEST=C:\dev\qa_workflow_automation\Product_images
-set LOG_FILE=C:\dev\qa_workflow_automation\sync_product_images_mtl_photos.log
+set DEST=C:\apps\qa_workflow_automation\Product_images
+set LOG_FILE=C:\apps\qa_workflow_automation\sync_product_images_mtl_photos.log
 set RECENT_DAYS=0
 
 REM Common image extensions only (add more if needed)
