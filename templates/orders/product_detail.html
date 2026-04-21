@@ -40,7 +40,11 @@
             </div>
             <div class="product-detail-field">
                 <label>Supplier ID</label>
-                <input type="text" readonly value="{{ supplier_display|default:'' }}">
+                <input type="text" readonly value="{{ product.supplier_id|default:'' }}">
+            </div>
+            <div class="product-detail-field">
+                <label>Supplier Name</label>
+                <input type="text" readonly value="{{ supplier_name|default:'' }}">
             </div>
             <div class="product-detail-field">
                 <label>Supplier Item Code</label>

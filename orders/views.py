@@ -564,22 +564,20 @@ class ProductDetailView(LoginRequiredMixin, View):
         if product.product_id and _PRODUCT_ID_SAFE_RE.match(product.product_id):
             image_url = reverse('orders:product-image', kwargs={'product_id': product.product_id})
 
-        supplier_display = product.supplier_id or ''
+        supplier_name = ''
         if product.supplier_id:
             supplier_name = (
                 Supplier.objects.filter(supplier_code=product.supplier_id)
                 .values_list('supplier_name', flat=True)
                 .first()
             )
-            if supplier_name:
-                supplier_display = f"{product.supplier_id} - {supplier_name}"
 
         context = {
             'product': product,
             'main_category_name': main_category_name,
             'sub_category_name': sub_category_name,
             'image_url': image_url,
-            'supplier_display': supplier_display,
+            'supplier_name': supplier_name or '',
         }
         return render(request, 'orders/product_detail.html', context)
 
