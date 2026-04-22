@@ -25,7 +25,10 @@
                 </svg>
             </button>
         </form>
-        <button class="btn advanced-toggle" type="button" onclick="toggleAdvancedSearch()">Advanced Search</button>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <a class="btn btn-secondary" href="{% url 'orders:order-export-excel' %}?{{ request.GET.urlencode }}">Export Excel</a>
+            <button class="btn advanced-toggle" type="button" onclick="toggleAdvancedSearch()">Advanced Search</button>
+        </div>
     </div>
 
     <form method="get" class="advanced-panel {% if show_advanced %}active{% endif %}" id="advancedPanel">

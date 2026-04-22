@@ -7,12 +7,13 @@ from django.contrib.auth import get_user_model
 from django.db import DatabaseError
 from django.db.models import Case, Count, IntegerField, Q, When, Prefetch
 from django.conf import settings
-from django.http import FileResponse, Http404, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 from django.urls import reverse, reverse_lazy
 from django.core.paginator import Paginator
+from openpyxl import Workbook
 import re
 from pathlib import Path
 
@@ -305,6 +306,180 @@ class OrderListView(LoginRequiredMixin, View):
             },
         }
         return render(request, 'orders/order_list.html', context)
+
+
+class OrderExportExcelView(LoginRequiredMixin, View):
+    """Export Sales Confirmation list to Excel with current filters."""
+
+    login_url = reverse_lazy('orders:login')
+
+    def get(self, request):
+        sc_number = request.GET.get('sc_number', '').strip()
+        cust_order = request.GET.get('cust_order', '').strip()
+        sc_date_from = request.GET.get('sc_date_from', '').strip()
+        sc_date_to = request.GET.get('sc_date_to', '').strip()
+        order_date_from = request.GET.get('order_date_from', '').strip()
+        order_date_to = request.GET.get('order_date_to', '').strip()
+        crd_from = request.GET.get('crd_from', '').strip()
+        crd_to = request.GET.get('crd_to', '').strip()
+        department = request.GET.get('department', '').strip()
+        status = request.GET.get('status', '').strip()
+        global_q = request.GET.get('q', '').strip()
+        sort = request.GET.get('sort', 'sc_number').strip()
+        sort_dir = request.GET.get('dir', 'asc').strip().lower()
+
+        base_qs = SOMain.objects.all()
+        fox_user = FoxUser.objects.filter(user_id=request.user.username).first()
+        if fox_user:
+            level = (fox_user.department_user_level or 'NORMAL').upper()
+            if level == 'ADMIN':
+                pass
+            elif level == 'SUPERVISOR':
+                if fox_user.department_id:
+                    base_qs = base_qs.filter(department_no=fox_user.department_id)
+                else:
+                    base_qs = base_qs.none()
+            else:
+                base_qs = base_qs.filter(user_id=fox_user.user_id)
+        else:
+            base_qs = base_qs.none()
+
+        somain_qs = base_qs
+        if sc_number:
+            somain_qs = somain_qs.filter(sc_number__icontains=sc_number)
+        if cust_order:
+            somain_qs = somain_qs.filter(cust_order__icontains=cust_order)
+        if department:
+            somain_qs = somain_qs.filter(department_no=department)
+        if status:
+            somain_qs = somain_qs.filter(sc_status=status)
+
+        if order_date_from:
+            try:
+                somain_qs = somain_qs.filter(order_date__date__gte=order_date_from)
+            except ValueError:
+                pass
+        if order_date_to:
+            try:
+                somain_qs = somain_qs.filter(order_date__date__lte=order_date_to)
+            except ValueError:
+                pass
+        if sc_date_from:
+            try:
+                somain_qs = somain_qs.filter(sc_date__date__gte=sc_date_from)
+            except ValueError:
+                pass
+        if sc_date_to:
+            try:
+                somain_qs = somain_qs.filter(sc_date__date__lte=sc_date_to)
+            except ValueError:
+                pass
+        if crd_from:
+            try:
+                somain_qs = somain_qs.filter(crd__date__gte=crd_from)
+            except ValueError:
+                pass
+        if crd_to:
+            try:
+                somain_qs = somain_qs.filter(crd__date__lte=crd_to)
+            except ValueError:
+                pass
+
+        if global_q:
+            detail_sc_numbers = (
+                SODetail.objects.filter(
+                    Q(sc_number__icontains=global_q)
+                    | Q(product_id__icontains=global_q)
+                    | Q(cust_item_code__icontains=global_q)
+                    | Q(supplier_id__icontains=global_q)
+                    | Q(product_name__icontains=global_q)
+                    | Q(item_description__icontains=global_q)
+                    | Q(supplier_item_code__icontains=global_q)
+                    | Q(bmi_item_code__icontains=global_q)
+                    | Q(french_item_code__icontains=global_q)
+                    | Q(brand__icontains=global_q)
+                )
+                .values_list('sc_number', flat=True)
+                .distinct()
+            )
+            somain_qs = somain_qs.filter(
+                Q(sc_number__icontains=global_q)
+                | Q(created_by__icontains=global_q)
+                | Q(cust_order__icontains=global_q)
+                | Q(user_id__icontains=global_q)
+                | Q(cu_code__icontains=global_q)
+                | Q(sc_number__in=detail_sc_numbers)
+            )
+
+        sortable_fields = {
+            'company': 'company',
+            'sc_number': 'sc_number',
+            'sc_status': 'sc_status',
+            'cu_code': 'cu_code',
+            'cust_order': 'cust_order',
+            'sc_date': 'sc_date',
+            'crd': 'crd',
+            'department_no': 'department_no',
+            'user_id': 'user_id',
+            'port_of_load': 'port_of_load',
+            'port_of_disch': 'port_of_disch',
+            'doc_net_total_amt': 'doc_net_total_amt',
+        }
+        sort_field = sortable_fields.get(sort, 'sc_number')
+        if sort_dir not in {'asc', 'desc'}:
+            sort_dir = 'asc'
+        order_by = sort_field if sort_dir == 'asc' else f"-{sort_field}"
+        orders = list(somain_qs.order_by(order_by))
+
+        cu_codes = list({order.cu_code for order in orders if order.cu_code})
+        customer_map = {
+            customer.customer_id: customer.customer_name
+            for customer in Customer.objects.filter(customer_id__in=cu_codes)
+        }
+        department_codes = list({order.department_no for order in orders if order.department_no})
+        department_map = {
+            d.code: d.name
+            for d in Department.objects.filter(code__in=department_codes)
+        }
+        user_ids = list({order.user_id for order in orders if order.user_id})
+        merchandiser_map = {
+            u.user_id: u.user_name
+            for u in FoxUser.objects.filter(user_id__in=user_ids)
+        }
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Sales Confirmation'
+        ws.append([
+            'Company', 'SC No.', 'Status', 'Customer ID', 'Customer Name',
+            'Customer Order', 'SC Date', 'CRD', 'Department',
+            'Merchandiser', 'Ship From', 'Port of Disch.', 'Total Amount (USD)',
+        ])
+        for order in orders:
+            ws.append([
+                order.company or '',
+                order.sc_number or '',
+                order.sc_status or '',
+                order.cu_code or '',
+                customer_map.get(order.cu_code, '') if order.cu_code else '',
+                order.cust_order or '',
+                order.sc_date.strftime('%Y-%m-%d') if order.sc_date else '',
+                order.crd.strftime('%Y-%m-%d') if order.crd else '',
+                department_map.get(order.department_no, '') if order.department_no else '',
+                merchandiser_map.get(order.user_id, '') if order.user_id else '',
+                order.port_of_load or '',
+                order.port_of_disch or '',
+                float(order.doc_net_total_amt) if order.doc_net_total_amt is not None else '',
+            ])
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = (
+            f'attachment; filename="sales_confirmation_{date.today().isoformat()}.xlsx"'
+        )
+        wb.save(response)
+        return response
 
 
 class SCProductListView(LoginRequiredMixin, View):
