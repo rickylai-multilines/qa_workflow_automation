@@ -14,6 +14,7 @@ from django.views.generic import DetailView, ListView, TemplateView
 from django.urls import reverse, reverse_lazy
 from django.core.paginator import Paginator
 from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
 import re
 from pathlib import Path
 
@@ -450,27 +451,104 @@ class OrderExportExcelView(LoginRequiredMixin, View):
         wb = Workbook()
         ws = wb.active
         ws.title = 'Sales Confirmation'
-        ws.append([
+        title_fill = PatternFill(fill_type='solid', fgColor='1F4E78')
+        section_fill = PatternFill(fill_type='solid', fgColor='D9E1F2')
+        header_fill = PatternFill(fill_type='solid', fgColor='E2EFD9')
+
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=13)
+        ws.cell(row=1, column=1, value='Sales Confirmation List')
+        ws.cell(row=1, column=1).font = Font(bold=True, size=16, color='FFFFFF')
+        ws.cell(row=1, column=1).fill = title_fill
+        ws.cell(row=1, column=1).alignment = Alignment(horizontal='center')
+
+        criteria_items = []
+        if global_q:
+            criteria_items.append(('General Search', global_q))
+        if sc_number:
+            criteria_items.append(('SC No.', sc_number))
+        if cust_order:
+            criteria_items.append(('Customer Order', cust_order))
+        if sc_date_from or sc_date_to:
+            criteria_items.append(('SC Date', f'{sc_date_from or "-"} to {sc_date_to or "-"}'))
+        if order_date_from or order_date_to:
+            criteria_items.append(('Order Date', f'{order_date_from or "-"} to {order_date_to or "-"}'))
+        if crd_from or crd_to:
+            criteria_items.append(('CRD', f'{crd_from or "-"} to {crd_to or "-"}'))
+        if department:
+            department_name = (
+                Department.objects.filter(code=department)
+                .values_list('name', flat=True)
+                .first()
+            )
+            criteria_items.append(('Department', f'{department} - {department_name or ""}'.strip(' -')))
+        if status:
+            criteria_items.append(('Status', status))
+        criteria_items.append(('Sort', f'{sort} ({sort_dir})'))
+
+        ws.cell(row=3, column=1, value='Search Criteria')
+        ws.cell(row=3, column=1).font = Font(bold=True)
+        ws.cell(row=3, column=1).fill = section_fill
+        criteria_start_row = 4
+        if criteria_items:
+            for idx, (label, value) in enumerate(criteria_items):
+                row_num = criteria_start_row + idx
+                ws.cell(row=row_num, column=1, value=label)
+                ws.cell(row=row_num, column=1).font = Font(bold=True)
+                ws.cell(row=row_num, column=1).fill = section_fill
+                ws.merge_cells(start_row=row_num, start_column=2, end_row=row_num, end_column=13)
+                ws.cell(row=row_num, column=2, value=value)
+            data_header_row = criteria_start_row + len(criteria_items) + 1
+        else:
+            ws.cell(row=criteria_start_row, column=1, value='All records')
+            data_header_row = criteria_start_row + 2
+
+        headers = [
             'Company', 'SC No.', 'Status', 'Customer ID', 'Customer Name',
             'Customer Order', 'SC Date', 'CRD', 'Department',
             'Merchandiser', 'Ship From', 'Port of Disch.', 'Total Amount (USD)',
-        ])
+        ]
+        for col_idx, header in enumerate(headers, start=1):
+            ws.cell(row=data_header_row, column=col_idx, value=header)
+        for cell in ws[data_header_row]:
+            cell.font = Font(bold=True)
+            cell.fill = header_fill
         for order in orders:
-            ws.append([
+            row_values = [
                 order.company or '',
                 order.sc_number or '',
                 order.sc_status or '',
                 order.cu_code or '',
                 customer_map.get(order.cu_code, '') if order.cu_code else '',
                 order.cust_order or '',
-                order.sc_date.strftime('%Y-%m-%d') if order.sc_date else '',
-                order.crd.strftime('%Y-%m-%d') if order.crd else '',
+                order.sc_date.date() if order.sc_date else None,
+                order.crd.date() if order.crd else None,
                 department_map.get(order.department_no, '') if order.department_no else '',
                 merchandiser_map.get(order.user_id, '') if order.user_id else '',
                 order.port_of_load or '',
                 order.port_of_disch or '',
                 float(order.doc_net_total_amt) if order.doc_net_total_amt is not None else '',
-            ])
+            ]
+            ws.append(row_values)
+            sc_date_cell = ws.cell(row=ws.max_row, column=7)
+            crd_cell = ws.cell(row=ws.max_row, column=8)
+            amount_cell = ws.cell(row=ws.max_row, column=13)
+            if sc_date_cell.value:
+                sc_date_cell.number_format = 'yyyy-mm-dd'
+            if crd_cell.value:
+                crd_cell.number_format = 'yyyy-mm-dd'
+            if isinstance(amount_cell.value, (int, float)):
+                amount_cell.number_format = '#,##0.00'
+
+        ws.freeze_panes = f'A{data_header_row + 1}'
+
+        for col_idx in range(1, 14):
+            max_length = 0
+            for row_idx in range(1, ws.max_row + 1):
+                value = ws.cell(row=row_idx, column=col_idx).value
+                if value is None:
+                    continue
+                max_length = max(max_length, len(str(value)))
+            ws.column_dimensions[chr(64 + col_idx)].width = min(max_length + 2, 60)
 
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
