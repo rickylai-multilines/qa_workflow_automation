@@ -90,7 +90,11 @@ def main():
     where_clause = ''
     if cutoff:
         cutoff_str = cutoff.strftime('%Y-%m-%d %H:%M:%S')
-        where_clause = f" WHERE adatetime >= {{^{cutoff_str}}}"
+        cutoff_date_str = cutoff.strftime('%Y-%m-%d')
+        where_clause = (
+            f" WHERE (adatetime >= {{^{cutoff_str}}} "
+            f"OR so_date >= {{^{cutoff_date_str}}})"
+        )
 
     if args.all:
         query = (
