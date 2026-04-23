@@ -75,6 +75,7 @@ def main():
     parser.add_argument('--dsn', default=os.getenv('FOXPRO_DSN', 'Fox Pro ERP'))
     parser.add_argument('--limit', type=int, default=1)
     parser.add_argument('--all', action='store_true', help='Export all rows (ignore --limit)')
+    parser.add_argument('--so-id', default=None, help='Export one specific SO_ID')
     parser.add_argument('--since-hours', type=int, default=None, help='Filter by adatetime in last N hours')
     parser.add_argument('--since-days', type=int, default=None, help='Filter by adatetime in last N days')
     parser.add_argument('--order-by', default='so_id')
@@ -96,7 +97,13 @@ def main():
             f"OR so_date >= {{^{cutoff_date_str}}})"
         )
 
-    if args.all:
+    if args.so_id:
+        so_id = str(args.so_id).replace("'", "''")
+        query = (
+            f"SELECT {', '.join(FOXPRO_FIELDS)} "
+            f"FROM SOMAST WHERE so_id = '{so_id}' ORDER BY {args.order_by}"
+        )
+    elif args.all:
         query = (
             f"SELECT {', '.join(FOXPRO_FIELDS)} "
             f"FROM SOMAST{where_clause} ORDER BY {args.order_by}"
