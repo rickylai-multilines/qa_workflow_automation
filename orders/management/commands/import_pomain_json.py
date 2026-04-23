@@ -192,10 +192,23 @@ class Command(BaseCommand):
             action='store_true',
             help='Update only CreatedBy/CreatedByDate/ModifiedBy/ModifiedByDate fields.',
         )
+        parser.add_argument(
+            '--update-window-days',
+            type=int,
+            default=None,
+            help='Only update existing records when ModifiedByDate is within N days.',
+        )
+        parser.add_argument(
+            '--row-log',
+            action='store_true',
+            help='Print every imported record.',
+        )
 
     def handle(self, *args, **options):
         path = options['path']
         audit_only = options['audit_only']
+        update_window_days = options['update_window_days']
+        row_log = options['row_log']
         rows = []
         try:
             is_ndjson = path.lower().endswith('.ndjson')
@@ -211,9 +224,10 @@ class Command(BaseCommand):
 
         created_count = 0
         updated_count = 0
+        skipped_count = 0
 
         def process_row(row):
-            nonlocal created_count, updated_count
+            nonlocal created_count, updated_count, skipped_count
             mapped = {}
             for source_field, target_field in FIELD_MAP.items():
                 value = row.get(source_field)
@@ -246,15 +260,24 @@ class Command(BaseCommand):
                     'modified_by_date': mapped.get('modified_by_date'),
                 }
 
-            obj, created = POMain.objects.update_or_create(
-                po_number=po_number,
-                defaults=mapped,
-            )
-            if created:
-                created_count += 1
-            else:
+            existing = POMain.objects.filter(po_number=po_number).first()
+            if existing:
+                if update_window_days is not None:
+                    source_modified = mapped.get('modified_by_date') or mapped.get('modified_time')
+                    cutoff = timezone.now() - datetime.timedelta(days=update_window_days)
+                    if not source_modified or source_modified < cutoff:
+                        skipped_count += 1
+                        return
+                for field, value in mapped.items():
+                    setattr(existing, field, value)
+                existing.save(update_fields=list(mapped.keys()))
                 updated_count += 1
-            self.stdout.write(self.style.SUCCESS(f"Imported POMAIN {obj.po_number}"))
+                obj = existing
+            else:
+                obj = POMain.objects.create(po_number=po_number, **mapped)
+                created_count += 1
+            if row_log:
+                self.stdout.write(self.style.SUCCESS(f"Imported POMAIN {obj.po_number}"))
 
         if is_ndjson:
             with open(path, 'r', encoding='utf-8') as f:
@@ -269,6 +292,6 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Done. Created: {created_count}, Updated: {updated_count}",
+                f"Done. Created: {created_count}, Updated: {updated_count}, Skipped: {skipped_count}",
             ),
         )
