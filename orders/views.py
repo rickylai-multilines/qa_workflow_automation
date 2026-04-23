@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import LoginView
 from django.contrib.auth import get_user_model
 from django.db import DatabaseError
-from django.db.models import Case, Count, IntegerField, Q, When, Prefetch
+from django.db.models import Case, Count, IntegerField, Q, When, Prefetch, Sum
 from django.conf import settings
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -871,11 +871,19 @@ class OrderDetailView(LoginRequiredMixin, View):
             amount = None
             if detail.qty is not None and detail.unit_price is not None:
                 amount = detail.qty * detail.unit_price
+            image_url = None
+            sc_item_photo = _safe_image_filename(getattr(detail, 'sc_item_photo', None))
+            if sc_item_photo:
+                image_url = reverse('orders:product-image-file', kwargs={'image_name': sc_item_photo})
+            elif detail.product_id:
+                image_url = reverse('orders:product-image', kwargs={'product_id': detail.product_id})
             detail_rows.append({
                 'detail': detail,
                 'amount': amount,
                 'product': product_map.get(detail.product_id),
+                'image_url': image_url,
             })
+        total_qty = details.aggregate(total=Sum('qty')).get('total') or 0
         total_amount = somain.net_total_amt if somain.net_total_amt is not None else None
         customer_name = None
         if somain.cu_code:
@@ -904,6 +912,7 @@ class OrderDetailView(LoginRequiredMixin, View):
         context = {
             'somain': somain,
             'detail_rows': detail_rows,
+            'total_qty': total_qty,
             'total_amount': total_amount,
             'customer_name': customer_name,
             'department_name': department_name,
@@ -1031,6 +1040,27 @@ def product_image(request, product_id):
             content_type = _CONTENT_TYPES.get(ext, 'application/octet-stream')
             return FileResponse(path.open('rb'), content_type=content_type, as_attachment=False)
     raise Http404('Product image not found')
+
+
+@login_required(login_url=reverse_lazy('orders:login'))
+def product_image_file(request, image_name):
+    """Serve product image by exact filename from Product_images."""
+    safe_name = _safe_image_filename(image_name)
+    if not safe_name:
+        raise Http404('Invalid image name')
+
+    root = getattr(settings, 'PRODUCT_IMAGES_ROOT', None) or (settings.BASE_DIR / 'Product_images')
+    root = root if hasattr(root, 'exists') else Path(root)
+    if not root.exists():
+        raise Http404('Product images folder not found')
+
+    path = root / safe_name
+    if not path.is_file():
+        raise Http404('Product image not found')
+
+    ext = path.suffix.lower()
+    content_type = _CONTENT_TYPES.get(ext, 'application/octet-stream')
+    return FileResponse(path.open('rb'), content_type=content_type, as_attachment=False)
 
 
 class UpdateTaskStatusView(LoginRequiredMixin, View):

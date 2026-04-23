@@ -16,6 +16,7 @@ urlpatterns = [
     path('products/detail/<path:product_id>/', views.ProductDetailView.as_view(), name='product-detail'),
     path('sc-product-list/', views.SCProductListView.as_view(), name='sc-product-list'),
     path('product-image/<str:product_id>/', views.product_image, name='product-image'),
+    path('product-image-file/<path:image_name>/', views.product_image_file, name='product-image-file'),
     path('task/<int:task_id>/update/', views.UpdateTaskStatusView.as_view(), name='update-task'),
     path('preferences/', views.UserPreferencesView.as_view(), name='preferences'),
     path('workflow/<slug:slug>/', views.WorkflowListView.as_view(), name='workflow-list'),

@@ -79,7 +79,7 @@
         <div class="detail-row"><span class="detail-label">Payment Terms:</span><span>{{ payment_term_desc|default:somain.payment_term_code|default:"-" }}</span></div>
 
         <div class="detail-row"><span class="detail-label">Cust. PO No.:</span><span>{{ somain.cust_order|default:"-" }}</span></div>
-        <div class="detail-row"><span class="detail-label">Total Quantity:</span><span>{{ somain.total_qty|floatformat:0|intcomma|default:"-" }}</span></div>
+        <div class="detail-row"><span class="detail-label">Total Quantity:</span><span>{{ total_qty|floatformat:0|intcomma }}</span></div>
 
         <div class="detail-row"><span class="detail-label">Department:</span><span>{{ department_name|default:"-" }}</span></div>
         <div class="detail-row"><span class="detail-label">Total CBM:</span><span>{{ somain.total_cbm|default:"-" }}</span></div>
@@ -136,9 +136,9 @@
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td class="product-image-cell">
-                            {% if row.detail.product_id %}
-                                <a href="{% url 'orders:product-image' row.detail.product_id %}" target="_blank" rel="noopener noreferrer">
-                                    <img src="{% url 'orders:product-image' row.detail.product_id %}" alt="" class="product-thumb" loading="lazy" onerror="this.style.display='none'">
+                            {% if row.image_url %}
+                                <a href="{{ row.image_url }}" target="_blank" rel="noopener noreferrer">
+                                    <img src="{{ row.image_url }}" alt="" class="product-thumb" loading="lazy" onerror="this.style.display='none'">
                                 </a>
                             {% else %}
                                 —
