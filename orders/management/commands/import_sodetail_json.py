@@ -44,6 +44,9 @@ FIELD_MAP = {
     'nb_ctns': 'no_of_carton',
     'custom_code': 'haos_code',
     'attribute4': 'brand',
+    'ccy': 'item_currency',
+    'material_name': 'material_name',
+    'photo1': 'sc_item_photo',
 }
 
 DECIMAL_FIELDS = {
@@ -151,29 +154,47 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--path', required=True)
+        parser.add_argument('--row-log', action='store_true', help='Print every imported row')
 
     def handle(self, *args, **options):
         path = options['path']
+        row_log = options['row_log']
         try:
-            with open(path, 'r', encoding='utf-8') as f:
-                rows = json.load(f)
+            is_ndjson = path.lower().endswith('.ndjson')
+            if not is_ndjson:
+                with open(path, 'r', encoding='utf-8') as f:
+                    rows = json.load(f)
+                    if not isinstance(rows, list):
+                        raise CommandError("JSON must be a list of rows (or NDJSON lines).")
         except FileNotFoundError as exc:
             raise CommandError(f"File not found: {path}") from exc
         except json.JSONDecodeError as exc:
             raise CommandError(f"Invalid JSON: {exc}") from exc
 
-        if not isinstance(rows, list):
-            raise CommandError("JSON must be a list of rows.")
-
         latest_by_key = {}
-        for row in rows:
-            key = (row.get('so_id'), row.get('product_id'), row.get('po_id'))
-            if not key[0]:
-                continue
-            candidate_ts = _latest_timestamp(row)
-            existing = latest_by_key.get(key)
-            if not existing or (candidate_ts and candidate_ts > existing[0]):
-                latest_by_key[key] = (candidate_ts, row)
+        if is_ndjson:
+            with open(path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    row = json.loads(line)
+                    key = (row.get('so_id'), row.get('product_id'), row.get('po_id'))
+                    if not key[0]:
+                        continue
+                    candidate_ts = _latest_timestamp(row)
+                    existing = latest_by_key.get(key)
+                    if not existing or (candidate_ts and candidate_ts > existing[0]):
+                        latest_by_key[key] = (candidate_ts, row)
+        else:
+            for row in rows:
+                key = (row.get('so_id'), row.get('product_id'), row.get('po_id'))
+                if not key[0]:
+                    continue
+                candidate_ts = _latest_timestamp(row)
+                existing = latest_by_key.get(key)
+                if not existing or (candidate_ts and candidate_ts > existing[0]):
+                    latest_by_key[key] = (candidate_ts, row)
 
         created_count = 0
         updated_count = 0
@@ -218,9 +239,10 @@ class Command(BaseCommand):
             else:
                 updated_count += 1
 
-            self.stdout.write(self.style.SUCCESS(
-                f"Imported SODETAIL {obj.sc_number} - {obj.product_id}",
-            ))
+            if row_log:
+                self.stdout.write(self.style.SUCCESS(
+                    f"Imported SODETAIL {obj.sc_number} - {obj.product_id}",
+                ))
 
         self.stdout.write(
             self.style.SUCCESS(

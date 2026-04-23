@@ -375,6 +375,9 @@ class SODetail(models.Model):
     no_of_carton = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, db_column='NoOfCarton')
     haos_code = models.CharField(max_length=20, null=True, blank=True, db_column='HAOSCode')
     brand = models.CharField(max_length=50, null=True, blank=True, db_column='Brand')
+    item_currency = models.CharField(max_length=10, null=True, blank=True, db_column='ItemCurrency')
+    material_name = models.CharField(max_length=60, null=True, blank=True, db_column='MaterialName')
+    sc_item_photo = models.CharField(max_length=80, null=True, blank=True, db_column='SCItemPhoto')
 
     class Meta:
         db_table = 'SODETAIL'
