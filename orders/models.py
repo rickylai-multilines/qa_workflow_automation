@@ -337,6 +337,80 @@ class SOMain(models.Model):
         return self.sc_number
 
 
+class POMain(models.Model):
+    """PostgreSQL copy of FoxPro POMAST (purchase order header)."""
+
+    po_number = models.CharField(max_length=20, unique=True, db_column='PONumber')
+    po_status = models.CharField(max_length=10, null=True, blank=True, db_column='POStatus')
+    po_date = models.DateTimeField(null=True, blank=True, db_column='PODate')
+    salesman = models.CharField(max_length=20, null=True, blank=True, db_column='Salesman')
+    customer_code = models.CharField(max_length=20, null=True, blank=True, db_column='CustomerCode')
+    supplier_id = models.CharField(max_length=20, null=True, blank=True, db_column='SupplierId')
+    po_ship_date = models.DateTimeField(null=True, blank=True, db_column='POShipDate')
+    ship_from = models.CharField(max_length=10, null=True, blank=True, db_column='ShipFrom')
+    origin = models.CharField(max_length=10, null=True, blank=True, db_column='Origin')
+    ship_to = models.CharField(max_length=10, null=True, blank=True, db_column='ShipTo')
+    port_of_disch = models.CharField(max_length=60, null=True, blank=True, db_column='PortOfDisch')
+    customer_order_number = models.CharField(max_length=60, null=True, blank=True, db_column='CustomerOrderNumber')
+    sc_date = models.DateTimeField(null=True, blank=True, db_column='SCDate')
+    payment_term_code = models.CharField(max_length=10, null=True, blank=True, db_column='PaymentTermCode')
+    trade_term = models.CharField(max_length=40, null=True, blank=True, db_column='TradeTerm')
+    po_exchange_rate = models.DecimalField(max_digits=11, decimal_places=6, null=True, blank=True, db_column='POExchangeRate')
+    po_currency = models.CharField(max_length=10, null=True, blank=True, db_column='POCurrency')
+    po_net_total = models.DecimalField(max_digits=15, decimal_places=4, null=True, blank=True, db_column='PONetTotal')
+    po_doc_net_total = models.DecimalField(max_digits=15, decimal_places=4, null=True, blank=True, db_column='PODocNetTotal')
+    po_remarks = models.TextField(null=True, blank=True, db_column='PORemarks')
+    charge1_desc = models.CharField(max_length=60, null=True, blank=True, db_column='Charge1Desc')
+    charge1_amount = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, db_column='Charge1Amount')
+    charge1_currency = models.CharField(max_length=10, null=True, blank=True, db_column='Charge1Currency')
+    charge1_curr_rate = models.DecimalField(max_digits=11, decimal_places=6, null=True, blank=True, db_column='Charge1CurrRate')
+    charge2_desc = models.CharField(max_length=60, null=True, blank=True, db_column='Charge2Desc')
+    charge2_amount = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, db_column='Charge2Amount')
+    charge2_currency = models.CharField(max_length=10, null=True, blank=True, db_column='Charge2Currency')
+    charge2_curr_rate = models.DecimalField(max_digits=11, decimal_places=6, null=True, blank=True, db_column='Charge2CurrRate')
+    charge3_desc = models.CharField(max_length=60, null=True, blank=True, db_column='Charge3Desc')
+    charge3_amount = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, db_column='Charge3Amount')
+    charge3_currency = models.CharField(max_length=10, null=True, blank=True, db_column='Charge3Currency')
+    charge3_curr_rate = models.DecimalField(max_digits=11, decimal_places=6, null=True, blank=True, db_column='Charge3CurrRate')
+    charge4_desc = models.CharField(max_length=60, null=True, blank=True, db_column='Charge4Desc')
+    charge4_amount = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, db_column='Charge4Amount')
+    charge4_currency = models.CharField(max_length=10, null=True, blank=True, db_column='Charge4Currency')
+    charge4_curr_rate = models.DecimalField(max_digits=11, decimal_places=6, null=True, blank=True, db_column='Charge4CurrRate')
+    sc_number = models.CharField(max_length=20, null=True, blank=True, db_column='SCNumber')
+    po_due_date = models.DateTimeField(null=True, blank=True, db_column='PODueDate')
+    po_port_of_loading = models.CharField(max_length=50, null=True, blank=True, db_column='POPortOfLoading')
+    po_container_qty = models.CharField(max_length=50, null=True, blank=True, db_column='POContainerQty')
+    po_container_size = models.CharField(max_length=50, null=True, blank=True, db_column='POContainerSize')
+    sc_ship_date = models.DateTimeField(null=True, blank=True, db_column='SCShipDate')
+    sc_date_alt = models.DateTimeField(null=True, blank=True, db_column='SCDateAlt')
+    po_ship_mark = models.TextField(null=True, blank=True, db_column='POShipMark')
+    created_by = models.CharField(max_length=50, null=True, blank=True, db_column='CreatedBy')
+    created_by_date = models.DateTimeField(null=True, blank=True, db_column='CreatedByDate')
+    modified_by = models.CharField(max_length=50, null=True, blank=True, db_column='ModifiedBy')
+    modified_by_date = models.DateTimeField(null=True, blank=True, db_column='ModifiedByDate')
+    modified_time = models.DateTimeField(null=True, blank=True, db_column='ModifiedTime')
+    posted = models.BooleanField(null=True, blank=True, db_column='Posted')
+    department_id = models.CharField(max_length=50, null=True, blank=True, db_column='DepartmentID')
+    year = models.CharField(max_length=10, null=True, blank=True, db_column='Year')
+    po_total_qty = models.DecimalField(max_digits=16, decimal_places=4, null=True, blank=True, db_column='POTotalQty')
+    po_total_gross_wt = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True, db_column='POTotalGrossWt')
+    po_total_net_wt = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True, db_column='POTotalNetWt')
+    po_total_cbm = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, db_column='POTotalCBM')
+    merchandiser = models.CharField(max_length=10, null=True, blank=True, db_column='Merchandiser')
+
+    class Meta:
+        db_table = 'POMAIN'
+        indexes = [
+            models.Index(fields=['po_number']),
+            models.Index(fields=['po_date']),
+            models.Index(fields=['sc_number']),
+            models.Index(fields=['supplier_id']),
+        ]
+
+    def __str__(self) -> str:
+        return self.po_number
+
+
 class SODetail(models.Model):
     """PostgreSQL copy of FoxPro SODTL (sales order detail)."""
 
