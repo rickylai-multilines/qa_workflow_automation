@@ -1,5 +1,6 @@
 import datetime
 import json
+import re
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand, CommandError
@@ -150,6 +151,22 @@ def _split_user_datetime(value):
     text = _sanitize_text(value)
     if not text:
         return None, None
+    # Handle prefixes like "L:2026/04/22 17:53 LEOMA" or "X:2026-04-22 17:53:00 USER"
+    match = re.match(
+        r'^(?:[A-Za-z]\:)?\s*(\d{4}[/-]\d{2}[/-]\d{2})\s+(\d{2}:\d{2}(?::\d{2})?)\s+(.+)$',
+        text,
+    )
+    if match:
+        date_part, time_part, user_part = match.groups()
+        normalized_date = date_part.replace('/', '-')
+        time_str = f"{normalized_date} {time_part}"
+        for fmt in ('%Y-%m-%d %H:%M', '%Y-%m-%d %H:%M:%S'):
+            try:
+                dt = datetime.datetime.strptime(time_str, fmt)
+                dt = timezone.make_aware(dt) if timezone.is_naive(dt) else dt
+                return _sanitize_text(user_part), dt
+            except ValueError:
+                continue
     parts = text.split()
     if len(parts) >= 3:
         user = parts[-1]
@@ -158,7 +175,7 @@ def _split_user_datetime(value):
             try:
                 dt = datetime.datetime.strptime(time_str, fmt)
                 dt = timezone.make_aware(dt) if timezone.is_naive(dt) else dt
-                return user, dt
+                return _sanitize_text(user), dt
             except ValueError:
                 continue
     # Fallback: if format cannot be parsed, keep as user text only.
@@ -170,9 +187,15 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--path', required=True)
+        parser.add_argument(
+            '--audit-only',
+            action='store_true',
+            help='Update only CreatedBy/CreatedByDate/ModifiedBy/ModifiedByDate fields.',
+        )
 
     def handle(self, *args, **options):
         path = options['path']
+        audit_only = options['audit_only']
         rows = []
         try:
             is_ndjson = path.lower().endswith('.ndjson')
@@ -214,6 +237,14 @@ class Command(BaseCommand):
             po_number = _sanitize_text(mapped.pop('po_number', None))
             if not po_number:
                 return
+
+            if audit_only:
+                mapped = {
+                    'created_by': mapped.get('created_by'),
+                    'created_by_date': mapped.get('created_by_date'),
+                    'modified_by': mapped.get('modified_by'),
+                    'modified_by_date': mapped.get('modified_by_date'),
+                }
 
             obj, created = POMain.objects.update_or_create(
                 po_number=po_number,

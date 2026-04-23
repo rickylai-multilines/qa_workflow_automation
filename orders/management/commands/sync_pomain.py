@@ -1,5 +1,6 @@
 import datetime
 import os
+import re
 from decimal import Decimal
 
 import pyodbc
@@ -120,6 +121,21 @@ def _split_user_datetime(value):
     text = str(value).strip()
     if not text:
         return None, None
+    match = re.match(
+        r'^(?:[A-Za-z]\:)?\s*(\d{4}[/-]\d{2}[/-]\d{2})\s+(\d{2}:\d{2}(?::\d{2})?)\s+(.+)$',
+        text,
+    )
+    if match:
+        date_part, time_part, user_part = match.groups()
+        normalized_date = date_part.replace('/', '-')
+        time_str = f"{normalized_date} {time_part}"
+        for fmt in ('%Y-%m-%d %H:%M', '%Y-%m-%d %H:%M:%S'):
+            try:
+                dt = datetime.datetime.strptime(time_str, fmt)
+                dt = timezone.make_aware(dt) if timezone.is_naive(dt) else dt
+                return user_part.strip()[:50], dt
+            except ValueError:
+                continue
     parts = text.split()
     if len(parts) >= 3:
         user = parts[-1]
@@ -128,7 +144,7 @@ def _split_user_datetime(value):
             try:
                 dt = datetime.datetime.strptime(time_str, fmt)
                 dt = timezone.make_aware(dt) if timezone.is_naive(dt) else dt
-                return user, dt
+                return user.strip()[:50], dt
             except ValueError:
                 continue
     return text[:50], None
