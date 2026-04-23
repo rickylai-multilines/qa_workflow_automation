@@ -109,7 +109,23 @@ def _parse_datetime(value):
     if isinstance(value, datetime.date):
         dt = datetime.datetime.combine(value, datetime.time.min)
         return timezone.make_aware(dt)
-    dt = datetime.datetime.fromisoformat(str(value))
+    text = str(value).strip()
+    for fmt in (
+        '%Y-%m-%dT%H:%M:%S',
+        '%Y-%m-%dT%H:%M:%S.%f',
+        '%Y-%m-%d %H:%M:%S',
+        '%Y/%m/%d %H:%M:%S',
+        '%m/%d/%y %I:%M:%S %p',
+        '%m/%d/%Y %I:%M:%S %p',
+        '%m/%d/%y %I:%M %p',
+        '%m/%d/%Y %I:%M %p',
+    ):
+        try:
+            dt = datetime.datetime.strptime(text, fmt)
+            return timezone.make_aware(dt) if timezone.is_naive(dt) else dt
+        except ValueError:
+            continue
+    dt = datetime.datetime.fromisoformat(text)
     return timezone.make_aware(dt) if timezone.is_naive(dt) else dt
 
 
