@@ -3,223 +3,258 @@
 {% block title %}Product {{ product.product_id }}{% endblock %}
 
 {% block content %}
-<div class="card product-detail-card">
-    <h1 class="product-detail-title">
-        Product Name : {{ product.product_name|default:"" }} [{{ product.product_id }}]
-    </h1>
+<div class="card product-detail-fox">
+    <div class="fox-title-row">
+        <h1 class="product-detail-title">Product Name : {{ product.product_name|default:"" }} [{{ product.product_id }}]</h1>
+    </div>
 
-    <div class="product-detail-grid">
-        <div class="product-detail-col product-detail-col-left">
-            <div class="product-detail-field">
-                <label>Product ID</label>
-                <input type="text" readonly value="{{ product.product_id|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>Product Name</label>
-                <input type="text" readonly value="{{ product.product_name|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>Main Cat.</label>
-                <input type="text" readonly value="{{ main_category_name|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>Sub_Cat.</label>
-                <input type="text" readonly value="{{ sub_category_name|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>BM UK Code</label>
-                <input type="text" readonly value="{{ product.customer_item_code|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>French Item Code</label>
-                <input type="text" readonly value="{{ product.french_item_code|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>German Item Code</label>
-                <input type="text" readonly value="{{ product.german_item_code|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>Supplier ID</label>
-                <input type="text" readonly value="{{ product.supplier_id|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>Supplier Name</label>
-                <input type="text" readonly value="{{ supplier_name|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>Supplier Item Code</label>
-                <input type="text" readonly value="{{ product.supplier_item_code|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>Brand</label>
-                <input type="text" readonly value="{{ product.brand|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>Season</label>
-                <input type="text" readonly value="">
-            </div>
-            <div class="product-detail-field">
-                <label>Material</label>
-                <input type="text" readonly value="{{ product.material|default:'' }}">
-            </div>
+    <div class="fox-top-grid">
+        <div class="fox-col fox-col-left">
+            <div class="fox-field"><label>Product ID</label><input readonly value="{{ product.product_id|default:'' }}"></div>
+            <div class="fox-field"><label>Cust. Ref</label><input readonly value="{{ product.customer_item_code|default:'' }}"></div>
+            <div class="fox-field"><label>Product Name</label><input readonly value="{{ product.product_name|default:'' }}"></div>
+            <div class="fox-field"><label>Supplier ID</label><input readonly value="{{ product.supplier_id|default:'' }}"></div>
+            <div class="fox-field fox-field-wide"><label>Supplier Name</label><input readonly value="{{ supplier_name|default:'' }}"></div>
+            <div class="fox-field"><label>Material</label><input readonly value="{{ product.material|default:'' }}"></div>
+            <div class="fox-field"><label>Season</label><input readonly value=""></div>
+            <div class="fox-field"><label>Main-Cat./Dept.</label><input readonly value="{{ main_category_name|default:'' }}"></div>
+            <div class="fox-field"><label>Sub-Cat.</label><input readonly value="{{ sub_category_name|default:'' }}"></div>
+            <div class="fox-field"><label>Brand</label><input readonly value="{{ product.brand|default:'' }}"></div>
+            <div class="fox-field"><label>Collection</label><input readonly value=""></div>
         </div>
 
-        <div class="product-detail-col product-detail-col-center">
-            <div class="product-detail-image-wrap">
+        <div class="fox-col fox-col-center">
+            <div class="fox-image-wrap">
                 {% if image_url %}
                     <img src="{{ image_url }}" alt="" class="product-detail-image" onerror="this.style.display='none'">
                 {% else %}
                     <div class="product-detail-image-placeholder muted">No image</div>
                 {% endif %}
             </div>
-            <div class="product-detail-field product-detail-field-stack">
-                <label>Description:</label>
-                <textarea readonly rows="12">{{ product.description|default:'' }}</textarea>
+            <div class="fox-meta muted">UPC# / Bar Code</div>
+        </div>
+
+        <div class="fox-col fox-col-right">
+            <div class="fox-field"><label>Gen No.</label><input readonly value="{{ product.product_id|default:'' }}"></div>
+            <div class="fox-field"><label>French item no</label><input readonly value="{{ product.french_item_code|default:'' }}"></div>
+            <div class="fox-field"><label>German item no.</label><input readonly value="{{ product.german_item_code|default:'' }}"></div>
+            <div class="fox-field"><label>Supplier Ref.</label><input readonly value="{{ product.supplier_item_code|default:'' }}"></div>
+            <div class="fox-field"><label>Stock Status</label><input readonly value=""></div>
+            <div class="fox-field"><label>Saleman</label><input readonly value="{{ product.mod_by|default:'' }}"></div>
+            <div class="fox-field"><label>Lead Time</label><input readonly value=""></div>
+            <div class="fox-field"><label>Mini. Order</label><input readonly value=""></div>
+            <div class="fox-field"><label>HTS #</label><input readonly value="{{ product.hs_code|default:'' }}"></div>
+            <div class="fox-field"><label>From Product ID</label><input readonly value="{{ product.copy_from_product_id|default:'' }}"></div>
+            <div class="fox-field"><label>Labtest valid till date</label><input readonly value="{{ product.lab_test_till_date|date:'d M, Y'|default:'' }}"></div>
+        </div>
+    </div>
+
+    <div class="fox-bottom-grid">
+        <div class="fox-notes">
+            <div class="fox-box">
+                <div class="fox-box-title">SC Description</div>
+                <textarea readonly rows="6">{{ product.description|default:'' }}</textarea>
+            </div>
+            <div class="fox-box">
+                <div class="fox-box-title">PO Description</div>
+                <textarea readonly rows="4"></textarea>
+            </div>
+            <div class="fox-box">
+                <div class="fox-box-title">Description for Website</div>
+                <textarea readonly rows="4"></textarea>
             </div>
         </div>
 
-        <div class="product-detail-col product-detail-col-right">
-            <div class="product-detail-field">
-                <label>Barcode</label>
-                <input type="text" readonly value="{{ product.barcode|default:'' }}">
+        <div class="fox-pricing">
+            <div class="fox-price-group">
+                <div class="fox-price-title">Buying Price</div>
+                <div class="fox-price-row">
+                    <label>Description</label>
+                    <input readonly value="{{ product.unit_cost_term|default:'' }}">
+                    <label>Price</label>
+                    <input readonly value="{% if product.unit_cost is not None %}{{ product.unit_cost|floatformat:3 }}{% endif %}">
+                    <label>Currency</label>
+                    <input readonly value="USD">
+                </div>
             </div>
-            <div class="product-detail-field">
-                <label>HTS</label>
-                <input type="text" readonly value="{{ product.hs_code|default:'' }}">
+            <div class="fox-price-group">
+                <div class="fox-price-title">Selling Price</div>
+                <div class="fox-price-row">
+                    <label>Price #1</label>
+                    <input readonly value="{% if product.unit_price is not None %}{{ product.unit_price|floatformat:3 }}{% endif %}">
+                    <label>Term</label>
+                    <input readonly value="{{ product.unit_price_term|default:'' }}">
+                </div>
+                <div class="fox-price-row">
+                    <label>Price #2</label>
+                    <input readonly value="{% if product.unit_price1 is not None %}{{ product.unit_price1|floatformat:3 }}{% endif %}">
+                    <label>Term</label>
+                    <input readonly value="{{ product.unit_price_term1|default:'' }}">
+                </div>
+                <div class="fox-price-row">
+                    <label>Price #3</label>
+                    <input readonly value="{% if product.unit_price2 is not None %}{{ product.unit_price2|floatformat:3 }}{% endif %}">
+                    <label>Term</label>
+                    <input readonly value="{{ product.unit_price_term2|default:'' }}">
+                </div>
             </div>
-            <div class="product-detail-field">
-                <label>Dupl. From Product ID</label>
-                <input type="text" readonly value="{{ product.copy_from_product_id|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>Measure Unit</label>
-                <input type="text" readonly value="{{ product.measure_unit|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>Length</label>
-                <input type="text" readonly value="{% if product.length is not None %}{{ product.length|floatformat:4 }}{% endif %}">
-            </div>
-            <div class="product-detail-field">
-                <label>Width</label>
-                <input type="text" readonly value="{% if product.width is not None %}{{ product.width|floatformat:4 }}{% endif %}">
-            </div>
-            <div class="product-detail-field">
-                <label>Height</label>
-                <input type="text" readonly value="{% if product.hight is not None %}{{ product.hight|floatformat:4 }}{% endif %}">
-            </div>
-            <div class="product-detail-field">
-                <label>CUFT</label>
-                <input type="text" readonly value="{% if product.cuft is not None %}{{ product.cuft|floatformat:6 }}{% endif %}">
-            </div>
-            <div class="product-detail-field">
-                <label>CBM</label>
-                <input type="text" readonly value="{% if product.cbm is not None %}{{ product.cbm|floatformat:6 }}{% endif %}">
-            </div>
-            <div class="product-detail-field">
-                <label>Qty per Carton</label>
-                <input type="text" readonly value="{% if product.qty_per_carton is not None %}{{ product.qty_per_carton }}{% endif %}">
-            </div>
-            <div class="product-detail-field">
-                <label>Packaging</label>
-                <input type="text" readonly value="{{ product.packing|default:'' }}">
-            </div>
-            <div class="product-detail-field">
-                <label>Last Modified by</label>
-                <input type="text" readonly value="{{ product.mod_by|default:'' }}">
+            <div class="fox-dim-grid">
+                <div class="fox-field"><label>Measure Unit</label><input readonly value="{{ product.measure_unit|default:'' }}"></div>
+                <div class="fox-field"><label>Length</label><input readonly value="{% if product.length is not None %}{{ product.length|floatformat:4 }}{% endif %}"></div>
+                <div class="fox-field"><label>Width</label><input readonly value="{% if product.width is not None %}{{ product.width|floatformat:4 }}{% endif %}"></div>
+                <div class="fox-field"><label>Height</label><input readonly value="{% if product.hight is not None %}{{ product.hight|floatformat:4 }}{% endif %}"></div>
+                <div class="fox-field"><label>CUFT</label><input readonly value="{% if product.cuft is not None %}{{ product.cuft|floatformat:6 }}{% endif %}"></div>
+                <div class="fox-field"><label>CBM</label><input readonly value="{% if product.cbm is not None %}{{ product.cbm|floatformat:6 }}{% endif %}"></div>
+                <div class="fox-field"><label>Qty per Carton</label><input readonly value="{% if product.qty_per_carton is not None %}{{ product.qty_per_carton }}{% endif %}"></div>
+                <div class="fox-field"><label>Packaging</label><input readonly value="{{ product.packing|default:'' }}"></div>
             </div>
         </div>
     </div>
 
-    <p style="margin-top: 1.25rem;">
+    <p style="margin-top: 1rem;">
         <a class="btn btn-secondary" href="{% url 'orders:product-list' %}">Back to Products</a>
     </p>
 </div>
 
 <style>
-    .product-detail-card {
+    .product-detail-fox {
         border: 1px solid var(--border-color);
     }
     .product-detail-title {
         color: var(--primary-color);
-        font-size: 1.15rem;
+        font-size: 1.05rem;
         font-weight: 700;
-        margin: 0 0 1.25rem 0;
-        line-height: 1.4;
+        margin: 0;
+        line-height: 1.25;
     }
-    .product-detail-grid {
+    .fox-title-row {
+        margin-bottom: 0.75rem;
+    }
+    .fox-top-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 1.5rem 2rem;
+        grid-template-columns: 1.2fr 0.9fr 1.1fr;
+        gap: 0.9rem 1.1rem;
         align-items: start;
+        margin-bottom: 1rem;
     }
     @media (max-width: 1100px) {
-        .product-detail-grid {
+        .fox-top-grid,
+        .fox-bottom-grid {
             grid-template-columns: 1fr;
         }
     }
-    .product-detail-field {
-        display: grid;
-        grid-template-columns: 140px 1fr;
-        align-items: center;
-        gap: 0.5rem 0.75rem;
-        margin-bottom: 0.65rem;
+    .fox-col {
+        min-width: 0;
     }
-    .product-detail-field label {
+    .fox-field {
+        display: grid;
+        grid-template-columns: 115px 1fr;
+        align-items: center;
+        gap: 0.35rem 0.45rem;
+        margin-bottom: 0.35rem;
+    }
+    .fox-field-wide {
+        grid-template-columns: 115px 1fr;
+    }
+    .fox-field label {
         margin: 0;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         font-weight: 500;
         color: var(--dark-text);
     }
-    .product-detail-field input[type="text"] {
+    .fox-field input {
         width: 100%;
-        max-width: none;
-        padding: 0.4rem 0.55rem;
-        font-size: 0.9rem;
-        background: #fff;
+        padding: 0.25rem 0.4rem;
+        font-size: 0.82rem;
+        background: #f8f9fa;
         border: 1px solid #ced4da;
-        border-radius: 4px;
+        border-radius: 3px;
     }
-    .product-detail-field-stack {
-        grid-template-columns: 1fr;
-        align-items: start;
-    }
-    .product-detail-field-stack label {
-        margin-bottom: 0.35rem;
-    }
-    .product-detail-field-stack textarea {
-        width: 100%;
-        min-height: 200px;
-        padding: 0.5rem 0.65rem;
-        font-size: 0.9rem;
-        font-family: inherit;
-        resize: vertical;
-        background: #fff;
+    .fox-image-wrap {
         border: 1px solid #ced4da;
-        border-radius: 4px;
-    }
-    .product-detail-image-wrap {
-        margin-bottom: 1rem;
-        min-height: 280px;
+        background: #fff;
+        min-height: 290px;
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: center;
+        margin-bottom: 0.5rem;
     }
     .product-detail-image {
-        max-width: 100%;
-        width: auto;
-        height: auto;
-        max-height: 420px;
-        object-fit: contain;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        background: #fafafa;
-    }
-    .product-detail-image-placeholder {
-        padding: 2rem;
-        border: 1px dashed var(--border-color);
-        border-radius: 4px;
         width: 100%;
+        max-width: 270px;
+        max-height: 320px;
+        object-fit: contain;
+    }
+    .fox-meta {
+        font-size: 0.78rem;
         text-align: center;
+    }
+    .fox-bottom-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 0.9rem 1.1rem;
+        align-items: start;
+    }
+    .fox-box {
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        background: #fff;
+        margin-bottom: 0.55rem;
+    }
+    .fox-box-title {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #495057;
+        background: #f1f3f5;
+        border-bottom: 1px solid #ced4da;
+        padding: 0.25rem 0.45rem;
+    }
+    .fox-box textarea {
+        width: 100%;
+        border: 0;
+        padding: 0.45rem 0.55rem;
+        font-size: 0.8rem;
+        font-family: inherit;
+        resize: vertical;
+    }
+    .fox-pricing {
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        background: #fff;
+        padding: 0.55rem;
+    }
+    .fox-price-group {
+        margin-bottom: 0.7rem;
+    }
+    .fox-price-title {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #0b7285;
+        margin-bottom: 0.3rem;
+    }
+    .fox-price-row {
+        display: grid;
+        grid-template-columns: 90px 1fr 48px 88px 60px 70px;
+        gap: 0.3rem;
+        align-items: center;
+        margin-bottom: 0.3rem;
+    }
+    .fox-price-row label {
+        font-size: 0.75rem;
+        color: #495057;
+        margin: 0;
+    }
+    .fox-price-row input {
+        padding: 0.23rem 0.35rem;
+        font-size: 0.78rem;
+        background: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+    }
+    .fox-dim-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.3rem 0.6rem;
     }
 </style>
 {% endblock %}
