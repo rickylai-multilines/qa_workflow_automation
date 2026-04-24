@@ -78,10 +78,35 @@ def _parse_foxpro_datetime(value):
     if re.match(r'^[A-Za-z]:', text):
         text = text[2:].strip()
 
+    def try_parse(candidate):
+        for fmt in (
+            '%Y/%m/%d %H:%M:%S',
+            '%Y/%m/%d %H:%M',
+            '%Y-%m-%d %H:%M:%S',
+            '%Y-%m-%d %H:%M',
+            '%m/%d/%y %I:%M:%S %p',
+            '%m/%d/%Y %I:%M:%S %p',
+            '%m/%d/%y %I:%M %p',
+            '%m/%d/%Y %I:%M %p',
+        ):
+            try:
+                return datetime.datetime.strptime(candidate, fmt)
+            except ValueError:
+                continue
+        return None
+
+    # First parse the full value directly (important for AM/PM values).
+    parsed = try_parse(text)
+    if parsed:
+        return parsed
+
+    # Then try stripping a trailing user token, e.g. "... PM JAMIE" or "... 15:54 LEOMA".
     parts = text.split()
-    candidate = text
-    if len(parts) >= 3:
+    if len(parts) >= 4:
         candidate = " ".join(parts[:-1])
+        parsed = try_parse(candidate)
+        if parsed:
+            return parsed
 
     for fmt in (
         '%Y/%m/%d %H:%M:%S',
@@ -94,7 +119,7 @@ def _parse_foxpro_datetime(value):
         '%m/%d/%Y %I:%M %p',
     ):
         try:
-            return datetime.datetime.strptime(candidate, fmt)
+            return datetime.datetime.strptime(text, fmt)
         except ValueError:
             continue
     return None
