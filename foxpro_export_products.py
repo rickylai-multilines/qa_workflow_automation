@@ -2,6 +2,7 @@ import argparse
 import datetime
 import json
 import os
+import re
 from decimal import Decimal
 
 import pyodbc
@@ -61,6 +62,44 @@ def _serialize_value(value):
     return value
 
 
+def _parse_foxpro_datetime(value):
+    if value is None or value == '':
+        return None
+    if isinstance(value, datetime.datetime):
+        return value
+    if isinstance(value, datetime.date):
+        return datetime.datetime.combine(value, datetime.time.min)
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    # Handle prefixes like "L:2026/04/23 15:54 USER"
+    if re.match(r'^[A-Za-z]:', text):
+        text = text[2:].strip()
+
+    parts = text.split()
+    candidate = text
+    if len(parts) >= 3:
+        candidate = " ".join(parts[:-1])
+
+    for fmt in (
+        '%Y/%m/%d %H:%M:%S',
+        '%Y/%m/%d %H:%M',
+        '%Y-%m-%d %H:%M:%S',
+        '%Y-%m-%d %H:%M',
+        '%m/%d/%y %I:%M:%S %p',
+        '%m/%d/%Y %I:%M:%S %p',
+        '%m/%d/%y %I:%M %p',
+        '%m/%d/%Y %I:%M %p',
+    ):
+        try:
+            return datetime.datetime.strptime(candidate, fmt)
+        except ValueError:
+            continue
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description="Export PRODUCTS rows to JSON.")
     parser.add_argument('--dsn', default=os.getenv('FOXPRO_DSN', 'Fox Pro ERP'))
@@ -80,15 +119,6 @@ def main():
         cutoff = datetime.datetime.now() - datetime.timedelta(days=args.since_days)
 
     where_clause = ''
-    if cutoff:
-        cutoff_str = cutoff.strftime('%Y/%m/%d %H:%M')
-        # Some newly created records may not have adate yet.
-        # Include cdate so new items are not missed in incremental sync.
-        where_clause = (
-            " WHERE "
-            f"(LEFT(adate, 16) >= '{cutoff_str}' OR LEFT(cdate, 16) >= '{cutoff_str}')"
-        )
-
     if args.all:
         query = (
             f"SELECT {', '.join(select_fields)} "
@@ -108,10 +138,15 @@ def main():
     finally:
         conn.close()
 
-    output = []
     export_keys = [alias for _, alias in FOXPRO_FIELDS]
+    output = []
     for row in rows:
         row_dict = dict(zip(export_keys, row))
+        if cutoff:
+            adate_dt = _parse_foxpro_datetime(row_dict.get('adate'))
+            cdate_dt = _parse_foxpro_datetime(row_dict.get('cdate'))
+            if not ((adate_dt and adate_dt >= cutoff) or (cdate_dt and cdate_dt >= cutoff)):
+                continue
         serialized = {key: _serialize_value(value) for key, value in row_dict.items()}
         output.append(serialized)
 
