@@ -144,7 +144,9 @@ def main():
         cutoff = datetime.datetime.now() - datetime.timedelta(days=args.since_days)
 
     where_clause = ''
-    if args.all:
+    incremental_mode = (args.since_hours is not None) or (args.since_days is not None)
+
+    if args.all or incremental_mode:
         query = (
             f"SELECT {', '.join(select_fields)} "
             f"FROM PRODUCTS{where_clause} ORDER BY {args.order_by}"
