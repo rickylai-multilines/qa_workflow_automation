@@ -2,6 +2,7 @@ import argparse
 import datetime
 import json
 import os
+import re
 from decimal import Decimal
 
 import pyodbc
@@ -55,6 +56,50 @@ def _serialize_value(value):
     return value
 
 
+def _parse_foxpro_datetime(value):
+    if value is None or value == '':
+        return None
+    if isinstance(value, datetime.datetime):
+        return value
+    if isinstance(value, datetime.date):
+        return datetime.datetime.combine(value, datetime.time.min)
+
+    text = str(value).strip()
+    if not text:
+        return None
+    if re.match(r'^[A-Za-z]:', text):
+        text = text[2:].strip()
+
+    def try_parse(candidate):
+        for fmt in (
+            '%Y/%m/%d %H:%M:%S',
+            '%Y/%m/%d %H:%M',
+            '%Y-%m-%d %H:%M:%S',
+            '%Y-%m-%d %H:%M',
+            '%m/%d/%y %I:%M:%S %p',
+            '%m/%d/%Y %I:%M:%S %p',
+            '%m/%d/%y %I:%M %p',
+            '%m/%d/%Y %I:%M %p',
+        ):
+            try:
+                return datetime.datetime.strptime(candidate, fmt)
+            except ValueError:
+                continue
+        return None
+
+    parsed = try_parse(text)
+    if parsed:
+        return parsed
+
+    parts = text.split()
+    if len(parts) >= 3 and parts[-1].upper() not in {'AM', 'PM'}:
+        parsed = try_parse(" ".join(parts[:-1]))
+        if parsed:
+            return parsed
+
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description="Export SODTL rows to JSON.")
     parser.add_argument('--dsn', default=os.getenv('FOXPRO_DSN', 'Fox Pro ERP'))
@@ -76,11 +121,9 @@ def main():
         cutoff = datetime.datetime.now() - datetime.timedelta(days=args.since_days)
 
     where_clause = ''
-    if cutoff:
-        cutoff_str = cutoff.strftime('%Y/%m/%d %H:%M')
-        where_clause = f" WHERE LEFT(adate, 16) >= '{cutoff_str}'"
+    incremental_mode = (args.since_hours is not None) or (args.since_days is not None)
 
-    if args.all:
+    if args.all or incremental_mode:
         query = (
             f"SELECT {', '.join(select_fields)} "
             f"FROM SODTL{where_clause} ORDER BY {args.order_by}"
@@ -107,6 +150,11 @@ def main():
                         break
                     for row in batch:
                         row_dict = dict(zip(export_keys, row))
+                        if cutoff:
+                            adate_dt = _parse_foxpro_datetime(row_dict.get('adate'))
+                            adatetime_dt = _parse_foxpro_datetime(row_dict.get('adatetime'))
+                            if not ((adate_dt and adate_dt >= cutoff) or (adatetime_dt and adatetime_dt >= cutoff)):
+                                continue
                         serialized = {key: _serialize_value(value) for key, value in row_dict.items()}
                         if not first:
                             f.write(',\n')
@@ -121,6 +169,11 @@ def main():
                         break
                     for row in batch:
                         row_dict = dict(zip(export_keys, row))
+                        if cutoff:
+                            adate_dt = _parse_foxpro_datetime(row_dict.get('adate'))
+                            adatetime_dt = _parse_foxpro_datetime(row_dict.get('adatetime'))
+                            if not ((adate_dt and adate_dt >= cutoff) or (adatetime_dt and adatetime_dt >= cutoff)):
+                                continue
                         serialized = {key: _serialize_value(value) for key, value in row_dict.items()}
                         json.dump(serialized, f, ensure_ascii=False)
                         f.write('\n')
