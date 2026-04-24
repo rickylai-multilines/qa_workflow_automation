@@ -102,7 +102,7 @@ def _parse_foxpro_datetime(value):
 
     # Then try stripping a trailing user token, e.g. "... PM JAMIE" or "... 15:54 LEOMA".
     parts = text.split()
-    if len(parts) >= 4:
+    if len(parts) >= 3 and parts[-1].upper() not in {'AM', 'PM'}:
         candidate = " ".join(parts[:-1])
         parsed = try_parse(candidate)
         if parsed:
