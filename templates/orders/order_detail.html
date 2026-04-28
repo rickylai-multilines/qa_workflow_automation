@@ -7,11 +7,14 @@
 <div class="card">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
         <span>Sales Confirmation {{ somain.sc_number }}</span>
-        <form method="post" style="margin: 0;">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="export_wip">
-            <button type="submit" class="btn btn-primary btn-3d">Export to WIP</button>
-        </form>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <a href="{% url 'orders:order-print-pdf' somain.sc_number %}" class="btn btn-secondary btn-3d">Print PDF</a>
+            <form method="post" style="margin: 0;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="export_wip">
+                <button type="submit" class="btn btn-primary btn-3d">Export to WIP</button>
+            </form>
+        </div>
     </div>
     <style>
         .detail-grid {

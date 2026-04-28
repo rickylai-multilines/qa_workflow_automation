@@ -12,6 +12,7 @@ urlpatterns = [
     path('orders/', views.OrderListView.as_view(), name='order-list'),
     path('orders/export/excel/', views.OrderExportExcelView.as_view(), name='order-export-excel'),
     path('orders/<str:sc_number>/', views.OrderDetailView.as_view(), name='order-detail'),
+    path('orders/<str:sc_number>/print/', views.OrderPrintPdfView.as_view(), name='order-print-pdf'),
     path('products/', views.ProductListView.as_view(), name='product-list'),
     path('products/detail/<path:product_id>/', views.ProductDetailView.as_view(), name='product-detail'),
     path('sc-product-list/', views.SCProductListView.as_view(), name='sc-product-list'),

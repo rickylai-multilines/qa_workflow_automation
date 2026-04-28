@@ -15,6 +15,14 @@ from django.urls import reverse, reverse_lazy
 from django.core.paginator import Paginator
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.platypus import Image as RLImage
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from html import escape
 import re
 from pathlib import Path
 
@@ -990,6 +998,288 @@ class OrderDetailView(LoginRequiredMixin, View):
                     else:
                         task.status = 'pending'
                     task.save(update_fields=['planned_date', 'status', 'kpi_days'])
+
+
+class OrderPrintPdfView(LoginRequiredMixin, View):
+    """Printable Sales Confirmation PDF (server-side)."""
+
+    login_url = reverse_lazy('orders:login')
+
+    def _resolve_logo_path(self):
+        explicit = getattr(settings, 'SC_PDF_LOGO', None)
+        candidates = []
+        if explicit:
+            candidates.append(Path(explicit))
+        candidates.extend([
+            settings.BASE_DIR / 'logo.png',
+            settings.BASE_DIR / 'static' / 'logo.png',
+            settings.BASE_DIR / 'assets' / 'logo.png',
+        ])
+        for path in candidates:
+            if path and path.is_file():
+                return path
+        return None
+
+    def _resolve_product_image_path(self, product):
+        root = getattr(settings, 'PRODUCT_IMAGES_ROOT', None) or (settings.BASE_DIR / 'Product_images')
+        root = root if hasattr(root, 'exists') else Path(root)
+        if not root.exists():
+            return None
+
+        candidates = []
+        if product and getattr(product, 'image', None):
+            fn = _safe_image_filename(product.image)
+            if fn:
+                candidates.append(root / fn)
+
+        product_id = getattr(product, 'product_id', None)
+        if product_id and _PRODUCT_ID_SAFE_RE.match(product_id):
+            candidates.extend(
+                root / f'{product_id}{suffix}{ext}'
+                for suffix in ('1', '000', '')
+                for ext in _IMAGE_EXTS
+            )
+
+        for path in candidates:
+            if path.is_file():
+                return path
+        return None
+
+    def _build_pdf_item_image(self, image_path, max_w_mm=31, max_h_mm=30):
+        """
+        Build a ReportLab image that preserves aspect ratio and fits the
+        merged first-two-column area in the SC item table.
+        """
+        img = RLImage(str(image_path))
+        # Keep original ratio while constraining both dimensions.
+        img._restrictSize(max_w_mm * mm, max_h_mm * mm)
+        return img
+
+    def _check_permission(self, request, somain):
+        fox_user = FoxUser.objects.filter(user_id=request.user.username).first()
+        if fox_user:
+            level = (fox_user.department_user_level or 'NORMAL').upper()
+            if level == 'ADMIN':
+                return True
+            if level == 'SUPERVISOR':
+                return bool(fox_user.department_id and somain.department_no == fox_user.department_id)
+            return somain.user_id == fox_user.user_id
+        return False
+
+    def get(self, request, sc_number):
+        somain = get_object_or_404(SOMain, sc_number=sc_number)
+        if not self._check_permission(request, somain):
+            return redirect('orders:order-list')
+
+        details = list(SODetail.objects.filter(sc_number=sc_number).order_by('product_id'))
+        product_ids = list({d.product_id for d in details if d.product_id})
+        product_map = {
+            p.product_id: p
+            for p in Product.objects.filter(product_id__in=product_ids)
+        }
+        customer_name = ''
+        if somain.cu_code:
+            customer_name = (
+                Customer.objects.filter(customer_id=somain.cu_code)
+                .values_list('customer_name', flat=True)
+                .first()
+            ) or ''
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="SC-{sc_number}.pdf"'
+
+        doc = SimpleDocTemplate(
+            response,
+            pagesize=A4,
+            leftMargin=12 * mm,
+            rightMargin=12 * mm,
+            topMargin=10 * mm,
+            bottomMargin=10 * mm,
+        )
+        styles = getSampleStyleSheet()
+        styles.add(ParagraphStyle(name='TitleCenterBold', parent=styles['Title'], alignment=TA_CENTER, fontSize=15))
+        styles.add(ParagraphStyle(name='SmallCenter', parent=styles['Normal'], alignment=TA_CENTER, fontSize=8.8))
+        styles.add(ParagraphStyle(name='Small', parent=styles['Normal'], fontSize=8.5, leading=10))
+        styles.add(ParagraphStyle(name='Tiny', parent=styles['Normal'], fontSize=7.6, leading=9))
+        story = []
+
+        logo_path = self._resolve_logo_path()
+        logo_cell = ''
+        if logo_path:
+            logo_cell = RLImage(str(logo_path), width=34 * mm, height=14 * mm)
+        company_header = Table([[
+            logo_cell,
+            Paragraph(
+                "<b>Multi Lines International Company Limited</b><br/>"
+                "Tower B, 29th Floor, Capital Tower, 38 Wai Yip Street, Kowloon Bay, Kowloon, Hong Kong<br/>"
+                "Tel: +852-2558 1786   Fax: +852-2558 1787   E-Mail: info@multilines.com.hk",
+                styles['SmallCenter'],
+            ),
+        ]], colWidths=[36 * mm, 142 * mm])
+        company_header.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+        ]))
+        story.append(company_header)
+        story.append(Spacer(1, 2 * mm))
+
+        title_row = Table([[
+            Paragraph("<font color='#d90429'><b>DRAFT</b></font>", styles['Title']),
+            Paragraph(f"<b>Sales Confirmation Note No : {somain.company or ''}-{sc_number}/26</b>", styles['Title']),
+            Paragraph("<b>Page#1</b>", styles['Small']),
+        ]], colWidths=[30 * mm, 130 * mm, 18 * mm])
+        title_row.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (2, 0), (2, 0), 'RIGHT'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+        ]))
+        story.append(title_row)
+        story.append(Spacer(1, 2 * mm))
+
+        left_block = [
+            "<b>M/S.</b>",
+            customer_name or '-',
+            "8 RUE DU BOIS JOLI, BP 80025",
+            "63800 COURNON D'AUVERGNE CEDEX",
+            "FRANCE",
+            "",
+            f"<b>Attention:</b> {getattr(somain, 'created_by', '') or '-'}",
+            "Phone: 33 04 73 69 90 60",
+        ]
+        right_block = [
+            f"<b>Date</b> : {date.today().strftime('%d-%b-%Y')}",
+            f"<b>Client Reference</b> : {somain.cust_order or 'TBA'}",
+            f"<b>Cargo Ready Date (CRD)</b> : {somain.crd.strftime('%d-%b-%Y') if somain.crd else '-'}",
+            f"<b>FOB Port</b> : {((somain.port_of_load or '') + ' ' + (somain.container_size or '')).strip() or '-'}",
+            f"<b>Payment Term</b> : {somain.payment_term_code or '-'}",
+            "",
+            f"<b>Merchandiser</b> : {somain.user_id or '-'}",
+        ]
+        meta_table = Table(
+            [[Paragraph("<br/>".join(left_block), styles['Small']), Paragraph("<br/>".join(right_block), styles['Small'])]],
+            colWidths=[85 * mm, 93 * mm],
+        )
+        meta_table.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 0.8, colors.black),
+            ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        story.append(meta_table)
+        story.append(Spacer(1, 2 * mm))
+        story.append(Paragraph(
+            "Thank your for your order with us on the following merchandise, subject to terms & conditions as agreed",
+            styles['Small'],
+        ))
+        story.append(Spacer(1, 1.5 * mm))
+
+        table_rows = [[
+            'Customer Item No.', 'Our Ref. No.', 'Description of Goods', 'Packing', 'Qty', 'USD', 'Per', 'Value',
+        ]]
+        total_qty = 0
+        total_value = 0
+        detail_row_indices = []
+        for d in details:
+            product = product_map.get(d.product_id)
+            qty = d.qty or 0
+            unit_price = float(d.unit_price) if d.unit_price is not None else 0.0
+            item_value = qty * unit_price
+            total_qty += qty
+            total_value += item_value
+            description_source = (product.description if product and product.description else d.item_description) or d.product_name or '-'
+            description_text = escape(str(description_source)).replace('\n', '<br/>')
+            packing_text = f"{int(d.qty_per_carton) if d.qty_per_carton else '-'} {d.carton_unit or ''}".strip()
+
+            image_cell = ''
+            image_path = self._resolve_product_image_path(product)
+            if image_path:
+                image_cell = self._build_pdf_item_image(image_path)
+
+            # First row: standard single-line row for all columns.
+            table_rows.append([
+                d.cust_item_code or 'TBA',
+                d.product_id or '-',
+                Paragraph(description_text, styles['Tiny']),
+                packing_text or '-',
+                f"{qty:,}" if qty else '0',
+                f"{unit_price:,.2f}",
+                d.carton_unit or '-',
+                f"{item_value:,.2f}",
+            ])
+            detail_row_indices.append(len(table_rows) - 1)
+
+            # Second row: image under first two columns + multiline description details.
+            table_rows.append([
+                image_cell,
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+            ])
+
+        table_rows.append([
+            '', '', '<b>Totals</b>', '', f"<b>{total_qty:,}</b>", '', '', f"<b>{total_value:,.2f}</b>",
+        ])
+        item_table = Table(
+            table_rows,
+            colWidths=[18 * mm, 18 * mm, 50 * mm, 27 * mm, 14 * mm, 13 * mm, 12 * mm, 26 * mm],
+            repeatRows=1,
+        )
+        item_table.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.55, colors.black),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#EFEFEF')),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 7.5),
+            ('ALIGN', (4, 1), (-1, -1), 'RIGHT'),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        # Merge first two columns on each image row so image sits under Customer + Our Ref.
+        for row_idx in detail_row_indices:
+            img_row_idx = row_idx + 1
+            item_table.setStyle(TableStyle([
+                ('SPAN', (0, img_row_idx), (1, img_row_idx)),
+                ('VALIGN', (0, img_row_idx), (1, img_row_idx), 'TOP'),
+                ('ALIGN', (0, img_row_idx), (1, img_row_idx), 'LEFT'),
+                ('SPAN', (2, row_idx), (2, img_row_idx)),
+                ('SPAN', (3, row_idx), (3, img_row_idx)),
+                ('SPAN', (4, row_idx), (4, img_row_idx)),
+                ('SPAN', (5, row_idx), (5, img_row_idx)),
+                ('SPAN', (6, row_idx), (6, img_row_idx)),
+                ('SPAN', (7, row_idx), (7, img_row_idx)),
+                ('VALIGN', (2, row_idx), (7, img_row_idx), 'TOP'),
+            ]))
+        story.append(item_table)
+        story.append(Spacer(1, 3 * mm))
+
+        notes = Paragraph(
+            "Total Order Value : USD <b>{:,.2f}</b><br/>".format(total_value) +
+            "- Order Once Placed can not be cancelled.<br/>"
+            "- Kindly confirm shipping marks / Side Marks.<br/>"
+            "- Kindly advise shipping company / forwarder details so we book vessel accordingly.<br/><br/>"
+            "Signed & Chopped By : __________________________",
+            styles['Small'],
+        )
+        story.append(notes)
+
+        doc.build(story)
+        return response
 
 
 # Safe product_id for path: alphanumeric, hyphen, underscore only
